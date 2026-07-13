@@ -47,35 +47,39 @@ export const ANIMATION = {
   },
 };
 
-/** Experience flow timing for the interactive typography chapter */
+/** Guided experience journey — ~20–30s interactive installation */
 export const EXPERIENCE = {
-  /** Minimum explore time before climax can trigger (ms) */
-  minExploreMs: 14000,
-  /** Energy needed to unlock climax (0–1 accumulated) */
-  climaxEnergy: 1,
-  /** Energy gains per interaction */
-  energy: {
-    move: 0.0012,
-    click: 0.055,
-    hold: 0.0045,
-    wheel: 0.012,
-    key: 0.04,
-    touch: 0.002,
-  },
-  /** Hold threshold (ms) before long-press activates */
-  holdMs: 280,
-  /** Idle soft-ending after no interaction (ms) */
-  idleEndingMs: 5000,
-  /** Minimum energy before idle ending can arm */
-  idleEndingMinEnergy: 0.12,
+  /** Opening concept hold (ms) */
+  openingHoldMs: 1400,
+  /** Move: minimum explore time before progress can complete */
+  moveMinMs: 2200,
+  /** Move: cursor travel near type needed to complete (px) */
+  moveDistance: 420,
+  /** Click: settle pause after click reaction (ms) */
+  clickSettleMs: 1100,
+  /** Hold: minimum press duration to complete (ms) */
+  holdMinMs: 900,
+  /** Hold: settle after release (ms) */
+  holdSettleMs: 900,
+  /** Drag: minimum drag distance to unlock release (px) */
+  dragDistance: 160,
+  /** Drag: minimum drag time (ms) */
+  dragMinMs: 800,
+  /** Release: rearrange duration (ms) */
+  releaseMs: 1400,
+  /** Ending: quiet hold before Replay appears (ms) */
+  endingHoldMs: 2000,
   /** Climax reform word */
   climaxWord: 'MOTION',
-  /** Opening hold before interaction (ms) */
-  openingHoldMs: 1600,
-  /** Fallback ending copy (session may override) */
+  /** Copy fallbacks (session may override) */
   endingTitle: 'Typography Never Stands Still.',
-  idleEndingTitle: 'Still Moving.',
-  endingCta: 'Play Again',
+  endingCta: 'Replay',
+  stages: {
+    move: 'Move',
+    click: 'Click',
+    hold: 'Hold',
+    drag: 'Drag',
+  },
 };
 
 /** Coordinated palette sets — applied randomly on load */

@@ -5,7 +5,7 @@
 .section--mouse {
   background-color: var(--color-bg);
   z-index: 9;
-  --experience-energy: 0;
+  --journey-progress: 0;
   --climax-flash: 0;
   touch-action: none;
   user-select: none;
@@ -122,20 +122,21 @@
   visibility: hidden;
 }
 
-/* Subtle energy whisper — thin bottom line */
-.mouse__energy {
+/* Journey progress — quiet bottom whisper */
+.mouse__progress {
   position: absolute;
   left: 50%;
   bottom: 12%;
-  width: min(12rem, 40vw);
+  width: min(10rem, 36vw);
   height: 1px;
   background: var(--color-text);
-  opacity: 0.2;
-  transform: translateX(-50%) scaleX(var(--experience-energy, 0));
-  transform-origin: left center;
+  opacity: 0.18;
+  transform: translateX(-50%) scaleX(var(--journey-progress, 0));
+  transform-origin: center center;
   pointer-events: none;
   z-index: 3;
   will-change: transform;
+  transition: transform 0.8s var(--ease-out-expo);
 }
 
 .mouse__content {
@@ -155,7 +156,6 @@
   position: absolute;
   top: calc(var(--header-height) + var(--space-sm));
   left: 50%;
-  transform: translateX(-50%);
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.2em;
@@ -164,6 +164,16 @@
   opacity: 0;
   pointer-events: none;
   white-space: nowrap;
+  z-index: 4;
+}
+
+/* Stage cue — centered above the word, installation-quiet */
+.mouse__label.is-stage {
+  top: auto;
+  bottom: calc(50% + clamp(3.5rem, 12vw, 7.5rem));
+  font-size: 0.75rem;
+  letter-spacing: 0.32em;
+  color: var(--color-text);
 }
 
 .mouse__word {
@@ -199,7 +209,6 @@
   text-shadow: none;
 }
 
-/* Soft outline mix — typography participates without killing readability */
 .mouse__letter.is-soft-outline {
   -webkit-text-stroke: calc(1.2px * var(--outline-mix, 0))
     color-mix(in srgb, var(--color-text) calc(var(--outline-mix, 0) * 100%), transparent);
@@ -254,7 +263,15 @@
   color: var(--color-text-muted);
   cursor: pointer;
   position: relative;
-  transition: color var(--duration-fast) var(--ease-out-expo);
+  transition: color var(--duration-fast) var(--ease-out-expo),
+    opacity 0.5s var(--ease-out-expo);
+  opacity: 0;
+  visibility: hidden;
+}
+
+.mouse__replay.is-visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 .mouse__replay::after {
@@ -299,7 +316,12 @@
     letter-spacing: 0.14em;
   }
 
-  .mouse__energy {
+  .mouse__label.is-stage {
+    bottom: calc(50% + clamp(2.75rem, 18vw, 5rem));
+    font-size: 0.6875rem;
+  }
+
+  .mouse__progress {
     bottom: 18%;
   }
 
@@ -316,7 +338,8 @@
 
 @media (hover: none) {
   .section--mouse {
-    touch-action: pan-y;
+    /* Keep gesture capture for the guided journey on touch */
+    touch-action: none;
   }
 
   .mouse__letter {

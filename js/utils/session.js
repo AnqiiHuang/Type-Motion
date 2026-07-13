@@ -6,19 +6,13 @@
 const OPENING_LINES = [
   'Move the Type',
   'Typography in Motion',
-  'Every Letter Reacts',
+  'Follow the Gesture',
 ];
 
 const ENDING_LINES = [
   'Typography Never Stands Still.',
   'Every Movement Creates Meaning.',
   'Type Keeps Moving.',
-];
-
-const IDLE_ENDING_LINES = [
-  'Still Moving.',
-  'Quiet for Now.',
-  'Until Next Time.',
 ];
 
 /**
@@ -76,8 +70,7 @@ export function createSessionMotion() {
     /** Opening / ending copy */
     openingLine: pick(OPENING_LINES),
     endingLine: pick(ENDING_LINES),
-    idleEndingLine: pick(IDLE_ENDING_LINES),
-    endingCta: 'Play Again',
+    endingCta: 'Replay',
   };
 }
 
