@@ -12,6 +12,14 @@
   -webkit-user-select: none;
 }
 
+/* Allow vertical scroll once the tutorial finishes (or before it starts) */
+.section--mouse[data-phase="intro"],
+.section--mouse[data-phase="complete"],
+.section--mouse[data-phase="complete"] .mouse__content,
+.section--mouse[data-phase="complete"] .mouse__ending {
+  touch-action: pan-y;
+}
+
 .section--mouse::before {
   content: '';
   position: absolute;
@@ -201,6 +209,7 @@
   position: absolute;
   top: calc(var(--header-height) + var(--space-sm));
   left: 50%;
+  translate: -50% 0;
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.2em;
@@ -210,8 +219,6 @@
   pointer-events: none;
   white-space: nowrap;
   z-index: 4;
-  /* Near-font cue removed — top step guide is the only visible instruction */
-  display: none;
 }
 
 /* Stage cue — centered above the word, installation-quiet */
@@ -219,7 +226,7 @@
   top: auto;
   bottom: calc(50% + clamp(3.5rem, 12vw, 7.5rem));
   font-size: 0.75rem;
-  letter-spacing: 0.32em;
+  letter-spacing: 0.22em;
   color: var(--color-text);
 }
 
@@ -227,7 +234,7 @@
   top: auto;
   bottom: calc(50% + clamp(3.5rem, 12vw, 7.5rem));
   font-size: 0.75rem;
-  letter-spacing: 0.28em;
+  letter-spacing: 0.2em;
   color: var(--color-text);
 }
 
@@ -329,6 +336,7 @@
   background: transparent;
   margin-top: 1rem;
   padding: 0.5rem 0;
+  pointer-events: auto;
   font-family: var(--font-primary);
   font-size: 0.6875rem;
   font-weight: 500;
@@ -479,6 +487,13 @@
   .section--mouse {
     /* Keep gesture capture for the guided journey on touch */
     touch-action: none;
+  }
+
+  .section--mouse[data-phase="intro"],
+  .section--mouse[data-phase="complete"],
+  .section--mouse[data-phase="complete"] .mouse__content,
+  .section--mouse[data-phase="complete"] .mouse__ending {
+    touch-action: pan-y;
   }
 
   .mouse__letter {

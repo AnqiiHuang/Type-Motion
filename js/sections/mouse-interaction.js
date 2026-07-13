@@ -1058,7 +1058,8 @@ export function initMouseInteraction(section) {
 
     if (ending) {
       ending.setAttribute('aria-hidden', 'false');
-      gsap.set(ending, { pointerEvents: 'auto' });
+      // Keep overlay non-capturing so touch scroll can continue on mobile
+      gsap.set(ending, { pointerEvents: 'none' });
       gsap.fromTo(
         ending,
         { autoAlpha: 0, y: 10 },

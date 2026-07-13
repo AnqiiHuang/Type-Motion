@@ -87,11 +87,11 @@ export const EXPERIENCE = {
     clickDone: '✓',
     hold: 'Hold',
     holding: 'Hold',
-    release: 'Release',
+    release: 'Release to continue',
     holdDone: '✓',
     drag: 'Drag',
     dragging: 'Drag',
-    dragRelease: 'Release',
+    dragRelease: 'Release to continue',
     dragDone: '✓',
   },
   feedback: {

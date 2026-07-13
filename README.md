@@ -32,7 +32,7 @@ The interactive chapter (Section 2) follows a complete flow:
 4. **Climax** — letters scatter and reform as `MOTION`
 5. **Ending** — Thank You → Explore Again
 
-Each page load applies a random coordinated palette. Sound is on by default (Mute in the header).
+Each page load applies a random coordinated palette. Sound is on by default.
 
 ## Project Structure
 

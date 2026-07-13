@@ -187,15 +187,50 @@ export function initThemeSystem() {
   bootThemeId = initial;
   setTheme(initial, { animate: false });
 
-  // Header + section buttons (event delegation)
+  const menu = document.querySelector('[data-theme-menu]');
+  const toggle = document.querySelector('[data-theme-toggle]');
+
+  const setMenuOpen = (open) => {
+    if (!menu || !toggle) return;
+    menu.classList.toggle('is-open', open);
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+
   const onClick = (e) => {
-    const btn = e.target.closest('[data-theme-option]');
-    if (!btn) return;
-    const id = btn.getAttribute('data-theme-option');
-    if (id) setTheme(id);
+    const option = e.target.closest('[data-theme-option]');
+    if (option && menu?.contains(option)) {
+      const id = option.getAttribute('data-theme-option');
+      if (id) setTheme(id);
+      setMenuOpen(false);
+      return;
+    }
+
+    // Section theme grid (outside header menu)
+    if (option) {
+      const id = option.getAttribute('data-theme-option');
+      if (id) setTheme(id);
+      return;
+    }
+
+    if (toggle && (e.target === toggle || toggle.contains(e.target))) {
+      setMenuOpen(!menu.classList.contains('is-open'));
+      return;
+    }
+
+    if (menu?.classList.contains('is-open') && !menu.contains(e.target)) {
+      setMenuOpen(false);
+    }
+  };
+
+  const onKeydown = (e) => {
+    if (e.key === 'Escape') setMenuOpen(false);
   };
 
   document.addEventListener('click', onClick);
+  document.addEventListener('keydown', onKeydown);
 
-  return () => document.removeEventListener('click', onClick);
+  return () => {
+    document.removeEventListener('click', onClick);
+    document.removeEventListener('keydown', onKeydown);
+  };
 }

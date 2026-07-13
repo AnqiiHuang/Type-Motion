@@ -45,14 +45,25 @@
   <header class="site-header">
     <span class="site-header__label">Type Motion</span>
     <div class="site-header__actions">
-      <button type="button" class="site-header__mute" data-mute-toggle aria-pressed="false" aria-label="Toggle sound">Mute</button>
-      <nav class="site-header__themes" aria-label="Theme">
+      <nav class="site-header__themes" aria-label="Theme" data-theme-menu>
         <span class="site-header__themes-label">Theme</span>
-        <button type="button" class="site-header__theme-btn" data-theme-option="minimal" aria-pressed="true">Minimal</button>
-        <button type="button" class="site-header__theme-btn" data-theme-option="brutalism" aria-pressed="false">Brutalism</button>
-        <button type="button" class="site-header__theme-btn" data-theme-option="cyber" aria-pressed="false">Cyber</button>
-        <button type="button" class="site-header__theme-btn" data-theme-option="luxury" aria-pressed="false">Luxury</button>
-        <button type="button" class="site-header__theme-btn" data-theme-option="editorial" aria-pressed="false">Editorial</button>
+        <button
+          type="button"
+          class="site-header__theme-toggle"
+          data-theme-toggle
+          aria-expanded="false"
+          aria-haspopup="listbox"
+          aria-controls="theme-menu-list"
+        >
+          <span data-theme-label>Minimal</span>
+        </button>
+        <div class="site-header__theme-list" id="theme-menu-list" role="listbox" aria-label="Themes">
+          <button type="button" class="site-header__theme-btn" data-theme-option="minimal" role="option" aria-pressed="true">Minimal</button>
+          <button type="button" class="site-header__theme-btn" data-theme-option="brutalism" role="option" aria-pressed="false">Brutalism</button>
+          <button type="button" class="site-header__theme-btn" data-theme-option="cyber" role="option" aria-pressed="false">Cyber</button>
+          <button type="button" class="site-header__theme-btn" data-theme-option="luxury" role="option" aria-pressed="false">Luxury</button>
+          <button type="button" class="site-header__theme-btn" data-theme-option="editorial" role="option" aria-pressed="false">Editorial</button>
+        </div>
       </nav>
       <button type="button" class="site-header__restart" data-restart aria-label="Restart experience">Restart</button>
     </div>

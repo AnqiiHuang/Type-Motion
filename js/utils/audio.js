@@ -248,7 +248,6 @@ export function setMuted(value) {
   } catch {
     // ignore
   }
-  syncMuteUI();
   window.dispatchEvent(new CustomEvent('mutechange', { detail: { muted } }));
 }
 
@@ -257,16 +256,8 @@ export function toggleMute() {
   return muted;
 }
 
-function syncMuteUI() {
-  document.querySelectorAll('[data-mute-toggle]').forEach((btn) => {
-    btn.setAttribute('aria-pressed', muted ? 'true' : 'false');
-    btn.classList.toggle('is-muted', muted);
-    btn.textContent = muted ? 'Sound' : 'Mute';
-  });
-}
-
 /**
- * Init audio + mute chrome. Unlocks on first pointer gesture.
+ * Init audio. Unlocks on first pointer gesture.
  * @returns {Function} cleanup
  */
 export function initAudio() {
@@ -276,26 +267,14 @@ export function initAudio() {
     muted = false;
   }
 
-  syncMuteUI();
-
   const unlockOnce = () => {
     unlock();
   };
 
-  const onMuteClick = (e) => {
-    const btn = e.target.closest('[data-mute-toggle]');
-    if (!btn) return;
-    e.preventDefault();
-    unlock();
-    toggleMute();
-  };
-
   window.addEventListener('pointerdown', unlockOnce, { once: true, passive: true });
   window.addEventListener('keydown', unlockOnce, { once: true });
-  document.addEventListener('click', onMuteClick);
 
   return () => {
-    document.removeEventListener('click', onMuteClick);
     if (ctx) {
       ctx.close().catch(() => {});
       ctx = null;
