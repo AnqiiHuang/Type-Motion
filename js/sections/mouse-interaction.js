@@ -1,33 +1,32 @@
 /**
  * Section 2 — Interactive Typography Experience
  *
- * Flow: Intro → Explore (move / click / hold / wheel / key / touch)
- *      → Climax (scatter + reform) → Ending → Replay
+ * Flow: Concept Opening → Explore → Climax → Ending → Replay
  *
- * Motion model: delayed targets (wave) → spring (inertia + damping)
- *              → velocity stretch + idle breath → soft settle
+ * Polish model:
+ *  - Each letter = independent organism (mass, tempo, float, trait)
+ *  - Session seed = subtle visit-to-visit variation
+ *  - Layered response = scale → rotate → weight → tracking → blur
+ *  - Typography axes participate (weight, stretch, tracking, baseline, outline)
+ *  - Soft spring physics (inertia + damping + mass)
  */
 
 import { ANIMATION, EXPERIENCE } from '../config.js';
 import { prefersReducedMotion } from '../utils/animation.js';
 import { getPointer } from '../utils/pointer.js';
 import { sound } from '../utils/audio.js';
+import { SESSION } from '../utils/session.js';
 
 const WORD = 'DESIGN';
 
-const INFLUENCE_RADIUS = 260;
-
-/** Spring feel — heavy type, soft settle, slight overshoot */
+/** Base spring — session multiplies per visit */
 const SPRING = {
   stiffness: 0.078,
   damping: 0.76,
-  /** How fast delayed targets catch the live target (≈20ms wave per letter) */
-  waveBase: 0.32,
-  waveStep: 0.048,
-  /** Settle damping when near rest */
   settleDamping: 0.9,
 };
 
+/** Base effect amplitudes — session + letter multiply */
 const EFFECT = {
   scale: 1.28,
   rotate: 14,
@@ -35,22 +34,40 @@ const EFFECT = {
   pull: 0.055,
   weight: 720,
   restWeight: 400,
+  stretch: 1.12,
+  restStretch: 1,
+  tracking: 0.06,
+  restTracking: 0,
+  opsz: 28,
+  restOpsz: 14,
   shadow: 28,
-  /** Extra stretch driven by mouse speed */
   velStretch: 0.22,
   velSkew: 16,
   velRotate: 8,
 };
 
-/** Idle breath — barely perceptible */
 const IDLE = {
   float: 2.4,
   scale: 0.012,
   rotate: 0.6,
-  period: 0.00105,
+};
+
+/** Layer catch-rate from ms delays (higher = snappier) */
+function layerCatch(ms) {
+  // ~60fps frames to catch up; tighter for earlier layers
+  return Math.max(0.045, 0.42 - ms * 0.00135);
+}
+
+const LAYER = {
+  scale: layerCatch(ANIMATION.layers.scale),
+  rotate: layerCatch(ANIMATION.layers.rotate),
+  weight: layerCatch(ANIMATION.layers.weight),
+  tracking: layerCatch(ANIMATION.layers.tracking),
+  blur: layerCatch(ANIMATION.layers.blur),
 };
 
 /** @typedef {'intro' | 'explore' | 'climax' | 'ending'} Phase */
+/** @typedef {'weight' | 'stretch' | 'track' | 'baseline'} LetterTrait */
 
 /**
  * @param {HTMLElement} container
@@ -83,6 +100,91 @@ function clamp(v, min, max) {
 }
 
 /**
+ * Stable-ish hash from index + session for personality (not pure Math.random each rebuild)
+ * @param {number} i
+ * @param {number} salt
+ */
+function letterRand(i, salt = 1) {
+  const x = Math.sin(i * 12.9898 + salt * 78.233 + SESSION.tempo * 40) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+/**
+ * @param {number} i
+ * @param {number} total
+ */
+function createLetterState(i, total = 6) {
+  const r1 = letterRand(i, 1);
+  const r2 = letterRand(i, 2);
+  const r3 = letterRand(i, 3);
+  const r4 = letterRand(i, 4);
+  const r5 = letterRand(i, 5);
+
+  /** @type {LetterTrait} */
+  const traits = ['weight', 'stretch', 'track', 'baseline'];
+  const trait = traits[Math.floor(r5 * traits.length)];
+
+  // Stagger index respects session wave direction
+  const orderIndex = SESSION.waveDir === 1 ? i : total - 1 - i;
+
+  return {
+    // delayed targets (layered)
+    dtx: 0,
+    dty: 0,
+    dtr: 0,
+    dts: 1,
+    dsk: 0,
+    dweight: EFFECT.restWeight,
+    dstretch: EFFECT.restStretch,
+    dtrack: EFFECT.restTracking,
+    dopsz: EFFECT.restOpsz,
+    dblur: 0,
+    // live targets
+    tx: 0,
+    ty: 0,
+    tr: 0,
+    ts: 1,
+    skew: 0,
+    weight: EFFECT.restWeight,
+    stretch: EFFECT.restStretch,
+    track: EFFECT.restTracking,
+    opsz: EFFECT.restOpsz,
+    blur: 0,
+    // current (springed)
+    x: 0,
+    y: 0,
+    r: 0,
+    s: 1,
+    sk: 0,
+    stretchCur: 1,
+    // velocities
+    vx: 0,
+    vy: 0,
+    vr: 0,
+    vs: 0,
+    vsk: 0,
+    vstretch: 0,
+    // ── Personality (independent organism) ──
+    mass: 0.72 + r1 * 0.55,
+    stiffness: SPRING.stiffness * SESSION.springK * (0.78 + r2 * 0.48),
+    damping: SPRING.damping * SESSION.springDamp * (0.92 + r3 * 0.12),
+    floatSpeed: 0.75 + r4 * 0.55,
+    floatAmp: 0.65 + r1 * 0.7,
+    rotateAmp: 0.55 + r2 * 0.9,
+    scaleAmp: 0.72 + r3 * 0.56,
+    inertia: 0.82 + r4 * 0.36,
+    wave: Math.max(
+      0.055,
+      (SESSION.waveBase - orderIndex * SESSION.waveStep) * (0.85 + r5 * 0.3)
+    ),
+    phase: i * 0.85 + r1 * 2.4,
+    trait,
+    /** Soft outline affinity — some letters go outline sooner */
+    outlineBias: 0.55 + r3 * 0.4,
+  };
+}
+
+/**
  * @param {HTMLElement} section
  * @returns {Function}
  */
@@ -92,11 +194,14 @@ export function initMouseInteraction(section) {
   const ending = section.querySelector('[data-mouse-ending]');
   const endingTitle = section.querySelector('[data-ending-title]');
   const replayBtn = section.querySelector('[data-mouse-replay]');
+  const openingEl = section.querySelector('[data-mouse-opening]');
+  const openingText = section.querySelector('[data-opening-text]');
 
   if (!wordEl) return () => {};
 
-  if (endingTitle) endingTitle.textContent = EXPERIENCE.endingTitle;
-  if (replayBtn) replayBtn.textContent = EXPERIENCE.endingCta;
+  if (openingText) openingText.textContent = SESSION.openingLine;
+  if (endingTitle) endingTitle.textContent = SESSION.endingLine;
+  if (replayBtn) replayBtn.textContent = SESSION.endingCta;
 
   let letters = buildLetters(wordEl, WORD);
   const reducedMotion = prefersReducedMotion();
@@ -124,13 +229,22 @@ export function initMouseInteraction(section) {
   let pointerDownY = 0;
   let cursorNear = 0;
   let cursorScale = 1;
+  let cursorRing = 1;
+  let cursorRot = 0;
   let cursorPressed = false;
   /** @type {Array<{ x: number, y: number }>} */
   let centers = [];
 
+  const influenceRadius = SESSION.influenceRadius;
+  const idlePeriod = SESSION.idlePeriod;
+
   // Custom cursor — fine pointer only
   /** @type {HTMLElement | null} */
   let cursorEl = null;
+  /** @type {HTMLElement | null} */
+  let cursorRingEl = null;
+  /** @type {HTMLElement | null} */
+  let cursorGlowEl = null;
   const finePointer =
     !reducedMotion &&
     window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -138,7 +252,13 @@ export function initMouseInteraction(section) {
     cursorEl = document.createElement('div');
     cursorEl.className = 'mouse__cursor';
     cursorEl.setAttribute('aria-hidden', 'true');
+    cursorEl.innerHTML =
+      '<span class="mouse__cursor-glow"></span>' +
+      '<span class="mouse__cursor-ring"></span>' +
+      '<span class="mouse__cursor-dot"></span>';
     section.appendChild(cursorEl);
+    cursorRingEl = cursorEl.querySelector('.mouse__cursor-ring');
+    cursorGlowEl = cursorEl.querySelector('.mouse__cursor-glow');
   }
 
   function refreshCenters() {
@@ -148,54 +268,16 @@ export function initMouseInteraction(section) {
     });
   }
 
-  /**
-   * Per-letter spring state
-   * d* = delayed targets (wave), v* = velocities (inertia)
-   */
-  const letterState = letters.map((_, i) => createLetterState(i));
-
-  function createLetterState(i) {
-    return {
-      // delayed targets
-      dtx: 0,
-      dty: 0,
-      dtr: 0,
-      dts: 1,
-      dsk: 0,
-      dweight: EFFECT.restWeight,
-      // live targets
-      tx: 0,
-      ty: 0,
-      tr: 0,
-      ts: 1,
-      skew: 0,
-      weight: EFFECT.restWeight,
-      // current
-      x: 0,
-      y: 0,
-      r: 0,
-      s: 1,
-      sk: 0,
-      // velocities
-      vx: 0,
-      vy: 0,
-      vr: 0,
-      vs: 0,
-      vsk: 0,
-      // wave catch rate — letter 0 nearly immediate, +~20ms lag each
-      wave: Math.max(0.06, SPRING.waveBase - i * SPRING.waveStep),
-      phase: i * 0.85,
-    };
-  }
+  /** @type {ReturnType<typeof createLetterState>[]} */
+  const letterState = letters.map((_, i) => createLetterState(i, letters.length));
 
   function syncLetterStateArray() {
     while (letterState.length < letters.length) {
-      letterState.push(createLetterState(letterState.length));
+      letterState.push(createLetterState(letterState.length, letters.length));
     }
     letterState.length = letters.length;
-    letterState.forEach((st, i) => {
-      st.wave = Math.max(0.06, SPRING.waveBase - i * SPRING.waveStep);
-      st.phase = i * 0.85;
+    letterState.forEach((_, i) => {
+      Object.assign(letterState[i], createLetterState(i, letters.length));
     });
   }
 
@@ -204,10 +286,11 @@ export function initMouseInteraction(section) {
     idleEndingArmed = false;
   }
 
-  // ── Entrance ────────────────────────────────────────────────────────────
+  // ── Entrance / Concept Opening ──────────────────────────────────────────
   gsap.set(letters, { opacity: 0, y: 36, scale: 0.94 });
   if (label) gsap.set(label, { opacity: 0, y: 10 });
   if (ending) gsap.set(ending, { autoAlpha: 0, pointerEvents: 'none' });
+  if (openingEl) gsap.set(openingEl, { autoAlpha: 1 });
 
   const entrance = ScrollTrigger.create({
     trigger: section,
@@ -218,27 +301,68 @@ export function initMouseInteraction(section) {
 
   function startIntro() {
     phase = 'intro';
-    gsap.to(letters, {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      duration: ANIMATION.duration.slow,
-      ease: ANIMATION.ease.expo,
-      stagger: 0.07,
-      onComplete: () => {
-        gsap.set(letters, { clearProps: 'transform' });
-        enterExplore();
-      },
+
+    const hold = reducedMotion ? 0.2 : EXPERIENCE.openingHoldMs / 1000;
+
+    const tl = gsap.timeline({
+      onComplete: () => enterExplore(),
     });
-    if (label) {
-      label.textContent = 'Move';
-      gsap.to(label, {
+
+    // Concept line holds, then soft exit
+    if (openingEl) {
+      gsap.set(openingEl, { autoAlpha: 1 });
+      tl.to(openingEl, {
+        autoAlpha: 0,
+        y: -8,
+        duration: 0.7,
+        ease: ANIMATION.ease.smooth,
+        delay: hold,
+      });
+    } else {
+      tl.to({}, { duration: hold * 0.3 });
+    }
+
+    // Letters awaken with session stagger direction
+    const staggerEach = 0.065;
+    const from =
+      SESSION.staggerFrom === 'start'
+        ? SESSION.waveDir === 1
+          ? 'start'
+          : 'end'
+        : SESSION.staggerFrom === 'end'
+          ? SESSION.waveDir === 1
+            ? 'end'
+            : 'start'
+          : SESSION.staggerFrom;
+
+    tl.to(
+      letters,
+      {
         opacity: 1,
         y: 0,
-        duration: ANIMATION.duration.normal,
-        ease: ANIMATION.ease.out,
-        delay: 0.35,
-      });
+        scale: 1,
+        duration: ANIMATION.duration.slow,
+        ease: ANIMATION.ease.expo,
+        stagger: { each: staggerEach, from },
+        onComplete: () => {
+          gsap.set(letters, { clearProps: 'transform' });
+        },
+      },
+      openingEl ? '-=0.25' : 0
+    );
+
+    if (label) {
+      label.textContent = 'Move';
+      tl.to(
+        label,
+        {
+          opacity: 1,
+          y: 0,
+          duration: ANIMATION.duration.normal,
+          ease: ANIMATION.ease.out,
+        },
+        '-=0.55'
+      );
     }
   }
 
@@ -306,7 +430,7 @@ export function initMouseInteraction(section) {
   }
 
   /**
-   * Critically-damped-ish spring step toward delayed target.
+   * Mass-aware spring — heavier letters respond slower, carry more inertia.
    * @param {ReturnType<typeof createLetterState>} st
    */
   function springStep(st) {
@@ -316,22 +440,26 @@ export function initMouseInteraction(section) {
       Math.abs(st.vx) < 0.15 &&
       Math.abs(st.vy) < 0.15;
 
-    const damp = nearRest ? SPRING.settleDamping : SPRING.damping;
-    const k = SPRING.stiffness;
+    const damp = nearRest ? SPRING.settleDamping * SESSION.springDamp : st.damping;
+    const k = st.stiffness / st.mass;
+    // Momentum retention — must stay < 1 so settle never amplifies
+    const mom = clamp(0.88 + (st.inertia - 1) * 0.06, 0.82, 0.96);
 
-    st.vx = (st.vx + (st.dtx - st.x) * k) * damp;
-    st.vy = (st.vy + (st.dty - st.y) * k) * damp;
-    st.vr = (st.vr + (st.dtr - st.r) * k) * damp;
-    st.vs = (st.vs + (st.dts - st.s) * k * 1.1) * damp;
-    st.vsk = (st.vsk + (st.dsk - st.sk) * k) * damp;
+    st.vx = (st.vx * mom + (st.dtx - st.x) * k) * damp;
+    st.vy = (st.vy * mom + (st.dty - st.y) * k) * damp;
+    st.vr = (st.vr * mom + (st.dtr - st.r) * k) * damp;
+    st.vs = (st.vs * mom + (st.dts - st.s) * k * 1.1) * damp;
+    st.vsk = (st.vsk * mom + (st.dsk - st.sk) * k) * damp;
+    st.vstretch =
+      (st.vstretch * mom + (st.dstretch - st.stretchCur) * k * 0.95) * damp;
 
     st.x += st.vx;
     st.y += st.vy;
     st.r += st.vr;
     st.s += st.vs;
     st.sk += st.vsk;
+    st.stretchCur += st.vstretch;
 
-    // Kill micro jitter
     if (Math.abs(st.vx) < 0.001) st.vx = 0;
     if (Math.abs(st.vy) < 0.001) st.vy = 0;
   }
@@ -347,23 +475,41 @@ export function initMouseInteraction(section) {
     const velNorm = clamp(pointer.speed / 38, 0, 1);
     const velEase = smoothstep(velNorm);
 
-    // Soft custom cursor
+    // Soft custom cursor — scale, ring, gentle rotate, whisper glow
     if (cursorEl && phase === 'explore') {
       const targetNear = cursorNear;
-      cursorScale = lerp(cursorScale, cursorPressed ? 0.72 : 1 + targetNear * 0.55, 0.18);
+      cursorScale = lerp(
+        cursorScale,
+        cursorPressed ? 0.7 : 1 + targetNear * 0.62,
+        0.16
+      );
+      cursorRing = lerp(cursorRing, 1 + targetNear * 1.35 + velEase * 0.25, 0.12);
+      const targetRot = pointer.speed > 0.8 ? Math.atan2(pointer.vy, pointer.vx) * (180 / Math.PI) : cursorRot;
+      cursorRot = lerp(cursorRot, targetRot, 0.08);
+
       cursorEl.style.transform =
-        `translate3d(${mouseX.toFixed(1)}px, ${mouseY.toFixed(1)}px, 0) scale(${cursorScale.toFixed(3)})`;
+        `translate3d(${mouseX.toFixed(1)}px, ${mouseY.toFixed(1)}px, 0) ` +
+        `rotate(${cursorRot.toFixed(2)}deg) scale(${cursorScale.toFixed(3)})`;
       cursorEl.style.opacity = hasPointer ? '1' : '0';
+      cursorEl.classList.toggle('is-near', targetNear > 0.12);
+      cursorEl.classList.toggle('is-pressed', cursorPressed);
+
+      if (cursorRingEl) {
+        cursorRingEl.style.transform = `scale(${cursorRing.toFixed(3)})`;
+      }
+      if (cursorGlowEl) {
+        cursorGlowEl.style.opacity = String((0.08 + targetNear * 0.22).toFixed(3));
+      }
       section.classList.toggle('has-custom-cursor', hasPointer);
     } else if (cursorEl) {
       cursorEl.style.opacity = '0';
       section.classList.remove('has-custom-cursor');
     }
 
-    // Motion blur from velocity — restrained
+    // Word-level motion blur (late layer)
     if (phase === 'explore' && !reducedMotion) {
-      const targetBlur = Math.min(pointer.speed * 0.09, 3.2);
-      blurAmount = lerp(blurAmount, hasPointer ? targetBlur : 0, 0.12);
+      const targetBlur = Math.min(pointer.speed * 0.09, 3.2) * SESSION.hoverIntensity;
+      blurAmount = lerp(blurAmount, hasPointer ? targetBlur : 0, LAYER.blur);
       wordEl.style.filter = blurAmount > 0.18 ? `blur(${blurAmount.toFixed(2)}px)` : 'none';
     }
 
@@ -375,9 +521,8 @@ export function initMouseInteraction(section) {
 
       let nearLetter = false;
       let maxInfluence = 0;
-      const t = now * IDLE.period;
+      const t = now * idlePeriod;
 
-      // Idle soft-ending: after interaction settles for idleMs
       if (
         !climaxDone &&
         energy >= EXPERIENCE.idleEndingMinEnergy &&
@@ -390,6 +535,11 @@ export function initMouseInteraction(section) {
         return;
       }
 
+      const intensity = SESSION.hoverIntensity;
+      const rotRange = SESSION.rotateRange;
+      const scaleRange = SESSION.scaleRange;
+      const velScale = SESSION.velStretch;
+
       letters.forEach((el, i) => {
         const st = letterState[i];
         if (!st) return;
@@ -400,36 +550,86 @@ export function initMouseInteraction(section) {
         const dist = Math.hypot(dx, dy);
 
         const influence = hasPointer
-          ? smoothstep(1 - dist / INFLUENCE_RADIUS)
+          ? smoothstep(1 - dist / influenceRadius)
           : 0;
 
         if (influence > 0.02) nearLetter = true;
         if (influence > maxInfluence) maxInfluence = influence;
 
-        // Idle breath — always on, fades under strong influence
+        // Idle breath — per-letter tempo & amplitude
         const breathMix = 1 - influence * 0.85;
-        const breathY = Math.sin(t * 1.15 + st.phase) * IDLE.float * breathMix;
-        const breathX = Math.cos(t * 0.72 + st.phase * 1.1) * IDLE.float * 0.35 * breathMix;
-        const breathS = 1 + Math.sin(t * 0.95 + st.phase * 0.8) * IDLE.scale * breathMix;
-        const breathR = Math.sin(t * 0.65 + st.phase) * IDLE.rotate * breathMix;
+        const ft = t * st.floatSpeed;
+        const breathY =
+          Math.sin(ft * 1.15 + st.phase) *
+          IDLE.float *
+          SESSION.idleFloat *
+          st.floatAmp *
+          breathMix;
+        const breathX =
+          Math.cos(ft * 0.72 + st.phase * 1.1) *
+          IDLE.float *
+          0.35 *
+          st.floatAmp *
+          breathMix;
+        const breathS =
+          1 +
+          Math.sin(ft * 0.95 + st.phase * 0.8) *
+            IDLE.scale *
+            st.scaleAmp *
+            breathMix;
+        const breathR =
+          Math.sin(ft * 0.65 + st.phase) *
+          IDLE.rotate *
+          st.rotateAmp *
+          breathMix;
 
-        // Proximity deformation — stronger when close
-        const amp = influence;
+        const amp = influence * intensity;
+
+        // ── Live targets (all computed; layers delay catch-up) ──
         let tx = breathX;
-        let ty = breathY + EFFECT.y * amp;
-        let tr = breathR + EFFECT.rotate * amp * (dx >= 0 ? 1 : -1);
-        let ts = breathS * (1 + (EFFECT.scale - 1) * amp);
+        let ty = breathY + EFFECT.y * amp * st.floatAmp;
+        let tr = breathR + EFFECT.rotate * rotRange * amp * st.rotateAmp * (dx >= 0 ? 1 : -1);
+        let ts = breathS * (1 + (EFFECT.scale - 1) * scaleRange * amp * st.scaleAmp);
         let sk = 0;
         let weight =
           EFFECT.restWeight + (EFFECT.weight - EFFECT.restWeight) * amp;
+        let stretch = EFFECT.restStretch;
+        let track = EFFECT.restTracking;
+        let opsz = EFFECT.restOpsz;
+        let letterBlur = 0;
 
-        // Velocity stretch — fast motion elongates / skews
+        // Trait emphasis — each letter leads with a different typographic voice
+        if (amp > 0.04) {
+          if (st.trait === 'weight') {
+            weight = lerp(weight, EFFECT.weight + 80, amp * 0.55);
+          } else if (st.trait === 'stretch') {
+            stretch = lerp(
+              EFFECT.restStretch,
+              amp > 0.5 ? EFFECT.stretch : 0.88,
+              amp
+            );
+          } else if (st.trait === 'track') {
+            track = EFFECT.tracking * amp * (i % 2 === 0 ? 1 : 0.6);
+          } else {
+            // baseline
+            ty -= 10 * amp * st.floatAmp;
+          }
+        }
+
+        // Shared typography participation (restrained)
+        stretch = lerp(stretch, EFFECT.stretch, amp * 0.35);
+        track = lerp(track, EFFECT.tracking * 0.7, amp * 0.45);
+        opsz = lerp(EFFECT.restOpsz, EFFECT.opsz, amp);
+        letterBlur = amp * 1.1 * (1 - st.outlineBias * 0.3);
+
+        // Velocity stretch
         if (amp > 0.04 && velEase > 0.05) {
           const dir = pointer.vx >= 0 ? 1 : -1;
-          sk += EFFECT.velSkew * velEase * amp * dir;
-          ts *= 1 + EFFECT.velStretch * velEase * amp;
-          tr += EFFECT.velRotate * velEase * amp * -dir;
+          sk += EFFECT.velSkew * velEase * amp * dir * velScale;
+          ts *= 1 + EFFECT.velStretch * velEase * amp * velScale;
+          tr += EFFECT.velRotate * velEase * amp * -dir * rotRange;
           ty += pointer.vy * 0.08 * velEase * amp;
+          stretch *= 1 + velEase * amp * 0.08;
         }
 
         // Long-press melt
@@ -441,6 +641,7 @@ export function initMouseInteraction(section) {
           ts = lerp(ts, 1.05 + melt * 0.55, melt);
           tr += melt * 8 * (i - letters.length / 2);
           weight = lerp(weight, 200, melt);
+          stretch = lerp(stretch, 1.2, melt * 0.6);
           addEnergy(EXPERIENCE.energy.hold * 0.016, { interact: true });
         }
 
@@ -448,7 +649,7 @@ export function initMouseInteraction(section) {
         weight = lerp(weight, wheelMorph.weight, 0.35);
         ts *= wheelMorph.size;
 
-        // Soft magnetic pull toward pointer
+        // Soft magnetic pull
         if (amp > 0.05) {
           tx += dx * EFFECT.pull * amp;
           ty += dy * EFFECT.pull * 0.7 * amp;
@@ -460,22 +661,49 @@ export function initMouseInteraction(section) {
         st.ts = ts;
         st.skew = sk;
         st.weight = weight;
+        st.stretch = stretch;
+        st.track = track;
+        st.opsz = opsz;
+        st.blur = letterBlur;
 
-        // Wave: delayed targets trail behind live targets
-        const catchRate = st.wave;
-        st.dtx = lerp(st.dtx, st.tx, catchRate);
-        st.dty = lerp(st.dty, st.ty, catchRate);
-        st.dtr = lerp(st.dtr, st.tr, catchRate);
-        st.dts = lerp(st.dts, st.ts, catchRate);
-        st.dsk = lerp(st.dsk, st.skew, catchRate);
-        st.dweight = lerp(st.dweight, st.weight, catchRate * 0.9);
+        // ── Layered catch: properties awaken in sequence ──
+        const wave = st.wave;
+        st.dtx = lerp(st.dtx, st.tx, wave * LAYER.scale);
+        st.dty = lerp(st.dty, st.ty, wave * LAYER.scale);
+        st.dts = lerp(st.dts, st.ts, wave * LAYER.scale);
+        st.dtr = lerp(st.dtr, st.tr, wave * LAYER.rotate);
+        st.dsk = lerp(st.dsk, st.skew, wave * LAYER.rotate);
+        st.dweight = lerp(st.dweight, st.weight, wave * LAYER.weight);
+        st.dstretch = lerp(st.dstretch, st.stretch, wave * LAYER.weight);
+        st.dtrack = lerp(st.dtrack, st.track, wave * LAYER.tracking);
+        st.dopsz = lerp(st.dopsz, st.opsz, wave * LAYER.tracking);
+        st.dblur = lerp(st.dblur, st.blur, wave * LAYER.blur);
 
         springStep(st);
 
+        const sx = st.s * st.stretchCur;
+        const sy = st.s / Math.max(0.85, Math.sqrt(st.stretchCur));
+
         el.style.transform =
           `translate3d(${st.x.toFixed(2)}px, ${st.y.toFixed(2)}px, 0) ` +
-          `rotate(${st.r.toFixed(2)}deg) skewX(${st.sk.toFixed(2)}deg) scale(${st.s.toFixed(3)})`;
+          `rotate(${st.r.toFixed(2)}deg) skewX(${st.sk.toFixed(2)}deg) ` +
+          `scale(${sx.toFixed(3)}, ${sy.toFixed(3)})`;
+
         el.style.fontWeight = String(Math.round(st.dweight));
+        el.style.fontVariationSettings = `'opsz' ${st.dopsz.toFixed(1)}`;
+        el.style.letterSpacing = `${st.dtrack.toFixed(4)}em`;
+        el.style.filter =
+          st.dblur > 0.15 ? `blur(${st.dblur.toFixed(2)}px)` : 'none';
+
+        // Outline emerges late in the influence curve — readability first
+        const outlineT = smoothstep((amp - 0.55 * st.outlineBias) / 0.35);
+        if (outlineT > 0.08) {
+          el.classList.add('is-soft-outline');
+          el.style.setProperty('--outline-mix', outlineT.toFixed(3));
+        } else {
+          el.classList.remove('is-soft-outline');
+          el.style.removeProperty('--outline-mix');
+        }
 
         const shadowBlur = EFFECT.shadow * amp;
         el.style.textShadow =
@@ -485,14 +713,13 @@ export function initMouseInteraction(section) {
       });
 
       cursorNear = maxInfluence;
-      wordEl.style.letterSpacing = `${wheelMorph.tracking}em`;
+      wordEl.style.letterSpacing = `${wheelMorph.tracking.toFixed(4)}em`;
 
       if (hasPointer && nearLetter) {
-        // Passive proximity energy — does not reset idle timer
         addEnergy(EXPERIENCE.energy.move, { interact: false });
         if (pointer.speed > 6) {
           noteInteract();
-          if (pointer.speed > 8 && now - lastTickSound > 140) {
+          if (pointer.speed > 8 && now - lastTickSound > 160) {
             lastTickSound = now;
             sound.tick();
           }
@@ -525,18 +752,25 @@ export function initMouseInteraction(section) {
         st.tx = st.ty = st.tr = st.skew = 0;
         st.dtx = st.dty = st.dtr = st.dsk = 0;
         st.x = st.y = st.r = st.sk = 0;
-        st.vx = st.vy = st.vr = st.vs = st.vsk = 0;
+        st.vx = st.vy = st.vr = st.vs = st.vsk = st.vstretch = 0;
         st.ts = st.dts = st.s = 1;
+        st.stretch = st.dstretch = st.stretchCur = EFFECT.restStretch;
+        st.track = st.dtrack = EFFECT.restTracking;
+        st.opsz = st.dopsz = EFFECT.restOpsz;
+        st.blur = st.dblur = 0;
         st.weight = st.dweight = EFFECT.restWeight;
       }
       el.style.transform = '';
       el.style.fontWeight = String(EFFECT.restWeight);
+      el.style.fontVariationSettings = '';
+      el.style.letterSpacing = '';
       el.style.textShadow = 'none';
       el.style.filter = '';
       el.style.opacity = '';
       el.style.webkitTextStroke = '';
       el.style.color = '';
-      el.classList.remove('is-outline');
+      el.style.removeProperty('--outline-mix');
+      el.classList.remove('is-outline', 'is-soft-outline');
     });
     wordEl.style.filter = 'none';
     wordEl.style.letterSpacing = '';
@@ -549,16 +783,15 @@ export function initMouseInteraction(section) {
     cursorPressed = false;
   }
 
-  // ── Soft idle ending (no climax) ────────────────────────────────────────
+  // ── Soft idle ending ────────────────────────────────────────────────────
   function beginSoftEnding() {
     if (phase !== 'explore' || climaxDone) return;
-    phase = 'climax'; // lock further energy / explore transforms
+    phase = 'climax';
     endHold();
     hasPointer = false;
     wordEl.style.filter = 'none';
     setLabel('');
 
-    // Seed GSAP from spring state so settle continues the motion (no snap)
     letters.forEach((el, i) => {
       const st = letterState[i];
       if (!st) return;
@@ -567,11 +800,13 @@ export function initMouseInteraction(section) {
         y: st.y,
         rotation: st.r,
         skewX: st.sk,
-        scale: st.s,
+        scaleX: st.s * st.stretchCur,
+        scaleY: st.s / Math.max(0.85, Math.sqrt(st.stretchCur)),
         fontWeight: Math.round(st.dweight),
       });
-      st.vx = st.vy = st.vr = st.vs = st.vsk = 0;
+      st.vx = st.vy = st.vr = st.vs = st.vsk = st.vstretch = 0;
       el.style.textShadow = 'none';
+      el.classList.remove('is-soft-outline');
     });
 
     const settle = gsap.timeline({
@@ -579,6 +814,7 @@ export function initMouseInteraction(section) {
     });
 
     letters.forEach((el, i) => {
+      const order = SESSION.waveDir === 1 ? i : letters.length - 1 - i;
       settle.to(
         el,
         {
@@ -586,12 +822,15 @@ export function initMouseInteraction(section) {
           y: 0,
           rotation: 0,
           skewX: 0,
-          scale: 1,
+          scaleX: 1,
+          scaleY: 1,
           fontWeight: EFFECT.restWeight,
+          letterSpacing: '0em',
+          filter: 'blur(0px)',
           duration: 1.25,
-          ease: 'power3.out',
+          ease: ANIMATION.ease.settle,
         },
-        i * 0.045
+        order * 0.05
       );
     });
 
@@ -630,17 +869,21 @@ export function initMouseInteraction(section) {
     let pending = letters.length;
 
     letters.forEach((el, i) => {
+      const st = letterState[i];
       const rect = el.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
       const dx = cx - clientX;
       const dy = cy - clientY;
       const dist = Math.max(40, Math.hypot(dx, dy));
-      const force = Math.min(140, 4800 / dist);
-      const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * 0.45;
+      const mass = st?.mass ?? 1;
+      const force = Math.min(140, 4800 / dist) / mass;
+      const angle = Math.atan2(dy, dx) + (letterRand(i, 9) - 0.5) * 0.45;
       const ox = Math.cos(angle) * force;
       const oy = Math.sin(angle) * force;
-      const rot = (Math.random() - 0.5) * 56;
+      const rot = (letterRand(i, 10) - 0.5) * 56 * SESSION.rotateRange;
+      const delay =
+        (SESSION.waveDir === 1 ? i : letters.length - 1 - i) * 0.03;
 
       gsap.fromTo(
         el,
@@ -648,18 +891,17 @@ export function initMouseInteraction(section) {
           x: ox,
           y: oy,
           rotation: rot,
-          scale: 1.18 + Math.random() * 0.22,
+          scale: 1.18 + letterRand(i, 11) * 0.22,
         },
         {
           x: 0,
           y: 0,
           rotation: 0,
           scale: 1,
-          duration: 0.95,
+          duration: 0.85 + mass * 0.2,
           ease: ANIMATION.ease.softSpring,
-          delay: i * 0.028,
+          delay,
           onComplete: () => {
-            const st = letterState[i];
             if (st) {
               st.x = st.y = st.r = 0;
               st.s = 1;
@@ -767,7 +1009,7 @@ export function initMouseInteraction(section) {
     }
   }
 
-  // ── Climax (WOW — once) ─────────────────────────────────────────────────
+  // ── Climax ──────────────────────────────────────────────────────────────
   function triggerClimax() {
     if (climaxDone || phase !== 'explore') return;
     climaxDone = true;
@@ -781,7 +1023,6 @@ export function initMouseInteraction(section) {
     sound.whoosh();
     section.classList.add('is-climax');
 
-    // Hand spring transforms to GSAP without a snap
     letters.forEach((el, i) => {
       const st = letterState[i];
       if (!st) return;
@@ -794,6 +1035,7 @@ export function initMouseInteraction(section) {
         opacity: 1,
       });
       el.style.textShadow = 'none';
+      el.classList.remove('is-soft-outline');
       st.vx = st.vy = st.vr = st.vs = st.vsk = 0;
     });
 
@@ -805,7 +1047,6 @@ export function initMouseInteraction(section) {
       },
     });
 
-    // Flash
     tl.fromTo(
       section,
       { '--climax-flash': 0.42 },
@@ -817,14 +1058,15 @@ export function initMouseInteraction(section) {
       0
     );
 
-    // Outline + scatter outward with staggered wave
     letters.forEach((el, i) => {
       const angle =
         (i / letters.length) * Math.PI * 2 -
         Math.PI / 2 +
-        (Math.random() - 0.5) * 0.35;
-      const dist = 180 + Math.random() * 220;
-      const spin = (Math.random() > 0.5 ? 1 : -1) * (220 + Math.random() * 280);
+        (letterRand(i, 12) - 0.5) * 0.35;
+      const dist = 180 + letterRand(i, 13) * 220;
+      const spin =
+        (letterRand(i, 14) > 0.5 ? 1 : -1) * (220 + letterRand(i, 15) * 280);
+      const order = SESSION.waveDir === 1 ? i : letters.length - 1 - i;
 
       el.classList.add('is-outline');
 
@@ -835,20 +1077,18 @@ export function initMouseInteraction(section) {
           y: Math.sin(angle) * dist,
           rotation: spin,
           skewX: 0,
-          scale: 0.2 + Math.random() * 0.45,
+          scale: 0.2 + letterRand(i, 16) * 0.45,
           opacity: 0.08,
           filter: 'blur(3px)',
           duration: 1.15,
           ease: 'power3.in',
         },
-        i * 0.045
+        order * 0.045
       );
     });
 
-    // Brief hold in the void
     tl.to({}, { duration: 0.35 });
 
-    // Reform as MOTION — slow, springy, wave-in
     tl.add(() => {
       gsap.killTweensOf(letters);
       letters = buildLetters(wordEl, EXPERIENCE.climaxWord);
@@ -875,11 +1115,10 @@ export function initMouseInteraction(section) {
       ease: ANIMATION.ease.softSpring,
       stagger: {
         each: 0.08,
-        from: 'center',
+        from: SESSION.staggerFrom === 'edges' ? 'edges' : 'center',
       },
     });
 
-    // Soft settle pause before ending
     tl.to({}, { duration: 0.85 });
   }
 
@@ -895,11 +1134,11 @@ export function initMouseInteraction(section) {
 
     if (endingTitle) {
       endingTitle.textContent = afterClimax
-        ? EXPERIENCE.endingTitle
-        : EXPERIENCE.idleEndingTitle;
+        ? SESSION.endingLine
+        : SESSION.idleEndingLine;
     }
     if (replayBtn) {
-      replayBtn.textContent = EXPERIENCE.endingCta;
+      replayBtn.textContent = SESSION.endingCta;
     }
 
     const fadeWord = afterClimax
@@ -965,6 +1204,17 @@ export function initMouseInteraction(section) {
       });
     }
 
+    // Fresh opening line on replay — still from the same pool language
+    if (openingText && openingEl) {
+      const lines = [
+        'Move the Type',
+        'Typography in Motion',
+        'Every Letter Reacts',
+      ];
+      openingText.textContent = lines[Math.floor(Math.random() * lines.length)];
+      gsap.set(openingEl, { autoAlpha: 1, y: 0 });
+    }
+
     letters = buildLetters(wordEl, WORD);
     syncLetterStateArray();
     wordEl.setAttribute('aria-label', WORD);
@@ -973,18 +1223,36 @@ export function initMouseInteraction(section) {
     gsap.set(wordEl, { opacity: 1, scale: 1, filter: 'none', y: 0 });
     gsap.set(letters, { opacity: 0, y: 28, scale: 0.96 });
 
-    gsap.to(letters, {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      duration: ANIMATION.duration.slow,
-      ease: ANIMATION.ease.expo,
-      stagger: 0.055,
-      onComplete: () => {
-        gsap.set(letters, { clearProps: 'transform' });
-        enterExplore();
-      },
+    const hold = reducedMotion ? 0.15 : 1.1;
+    const tl = gsap.timeline({
+      onComplete: () => enterExplore(),
     });
+
+    if (openingEl) {
+      tl.to(openingEl, {
+        autoAlpha: 0,
+        y: -6,
+        duration: 0.55,
+        ease: ANIMATION.ease.smooth,
+        delay: hold,
+      });
+    }
+
+    tl.to(
+      letters,
+      {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        duration: ANIMATION.duration.slow,
+        ease: ANIMATION.ease.expo,
+        stagger: 0.055,
+        onComplete: () => {
+          gsap.set(letters, { clearProps: 'transform' });
+        },
+      },
+      openingEl ? '-=0.2' : 0
+    );
   }
 
   // ── Pointer / touch bindings ────────────────────────────────────────────
@@ -1085,6 +1353,7 @@ export function initMouseInteraction(section) {
     gsap.killTweensOf(wordEl);
     if (ending) gsap.killTweensOf(ending);
     if (label) gsap.killTweensOf(label);
+    if (openingEl) gsap.killTweensOf(openingEl);
     cursorEl?.remove();
   });
 

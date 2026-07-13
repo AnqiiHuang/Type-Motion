@@ -5,6 +5,7 @@
  */
 
 import { ANIMATION } from '../config.js';
+import { SESSION } from '../utils/session.js';
 
 /**
  * Initialize About section
@@ -17,6 +18,11 @@ export function initAbout(section) {
   const rule = section.querySelector('.about__rule');
   const body = section.querySelector('.about__body');
   const footer = section.querySelector('.about__footer');
+  const endingMeta = section.querySelector('[data-about-ending]');
+
+  if (endingMeta) {
+    endingMeta.textContent = SESSION.endingLine;
+  }
 
   const parts = [eyebrow, title, rule, body, footer].filter(Boolean);
 

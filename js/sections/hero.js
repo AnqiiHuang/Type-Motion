@@ -1,13 +1,12 @@
 /**
  * Section 1 — Landing Hero
  *
- * Interactions:
- *  - Mouse move → text follows with smooth lag
- *  - Scroll down → text scales down, background gradient fades in
+ * Concept opening → TYPE entrance → parallax → scroll exit
  */
 
 import { ANIMATION } from '../config.js';
 import { prefersReducedMotion } from '../utils/animation.js';
+import { SESSION } from '../utils/session.js';
 
 /**
  * Initialize Hero section
@@ -16,6 +15,7 @@ import { prefersReducedMotion } from '../utils/animation.js';
  */
 export function initHero(section) {
   const word = section.querySelector('[data-hero-word]');
+  const concept = section.querySelector('[data-hero-concept]');
   const bg = section.querySelector('.hero__bg');
   const scrollHint = document.querySelector('.scroll-hint');
   const headerLabel = document.querySelector('.site-header__label');
@@ -26,27 +26,62 @@ export function initHero(section) {
   const reducedMotion = prefersReducedMotion();
   const cleanups = [];
 
-  // ── Entrance animation ──────────────────────────────────────────────────
-  gsap.set(word, { opacity: 0, scale: 1.08 });
+  if (concept) {
+    concept.textContent = SESSION.openingLine;
+  }
 
-  const entranceTl = gsap.timeline({ delay: 0.2 });
-  entranceTl.to(word, {
-    opacity: 1,
-    scale: 1,
-    duration: ANIMATION.duration.slow,
-    ease: ANIMATION.ease.expo,
-  });
+  // ── Concept Opening → TYPE ──────────────────────────────────────────────
+  gsap.set(word, { opacity: 0, scale: 1.08 });
+  if (concept) gsap.set(concept, { opacity: 0, y: 6 });
+
+  const hold = reducedMotion ? 0.25 : ANIMATION.duration.opening * 0.85;
+  const entranceTl = gsap.timeline({ delay: 0.15 });
+
+  if (concept) {
+    entranceTl
+      .to(concept, {
+        opacity: 1,
+        y: 0,
+        duration: 0.7,
+        ease: ANIMATION.ease.out,
+      })
+      .to(concept, {
+        opacity: 0,
+        y: -10,
+        duration: 0.65,
+        ease: ANIMATION.ease.smooth,
+        delay: hold,
+      });
+  } else {
+    entranceTl.to({}, { duration: 0.2 });
+  }
+
+  entranceTl.to(
+    word,
+    {
+      opacity: 1,
+      scale: 1,
+      duration: ANIMATION.duration.slow,
+      ease: ANIMATION.ease.expo,
+    },
+    concept ? '-=0.2' : 0
+  );
 
   // Show UI chrome after entrance
-  entranceTl.call(() => {
-    scrollHint?.classList.add('is-visible');
-    headerLabel?.classList.add('is-visible');
-    headerActions?.classList.add('is-visible');
-  }, null, '-=0.4');
+  entranceTl.call(
+    () => {
+      scrollHint?.classList.add('is-visible');
+      headerLabel?.classList.add('is-visible');
+      headerActions?.classList.add('is-visible');
+    },
+    null,
+    '-=0.35'
+  );
 
   // ── Mouse parallax ──────────────────────────────────────────────────────
   if (!reducedMotion) {
-    const { strength, duration } = ANIMATION.parallax;
+    const strength = ANIMATION.parallax.strength * (0.9 + (SESSION.tempo - 1) * 0.4);
+    const duration = ANIMATION.parallax.duration / SESSION.tempo;
 
     const xTo = gsap.quickTo(word, 'x', { duration, ease: ANIMATION.ease.soft });
     const yTo = gsap.quickTo(word, 'y', { duration, ease: ANIMATION.ease.soft });
@@ -84,22 +119,34 @@ export function initHero(section) {
   });
 
   scrollTl
-    .to(word, {
-      scale: 0.35,
-      opacity: 0.15,
-      duration: 1,
-      ease: ANIMATION.ease.inOut,
-    }, 0)
-    .to(bg, {
-      opacity: 1,
-      duration: 1,
-      ease: ANIMATION.ease.inOut,
-    }, 0)
-    .to(word, {
-      y: -60,
-      duration: 1,
-      ease: ANIMATION.ease.inOut,
-    }, 0);
+    .to(
+      word,
+      {
+        scale: 0.35,
+        opacity: 0.15,
+        duration: 1,
+        ease: ANIMATION.ease.inOut,
+      },
+      0
+    )
+    .to(
+      bg,
+      {
+        opacity: 1,
+        duration: 1,
+        ease: ANIMATION.ease.inOut,
+      },
+      0
+    )
+    .to(
+      word,
+      {
+        y: -60,
+        duration: 1,
+        ease: ANIMATION.ease.inOut,
+      },
+      0
+    );
 
   // Fade out scroll hint on scroll start
   ScrollTrigger.create({

@@ -37,23 +37,89 @@
   cursor: none;
 }
 
-/* Minimal custom cursor — grows near type, shrinks on press */
+/* Custom cursor — soft scale, ring, whisper glow near type */
 .mouse__cursor {
   position: fixed;
   top: 0;
   left: 0;
   z-index: 40;
-  width: 10px;
-  height: 10px;
-  margin: -5px 0 0 -5px;
-  border-radius: 50%;
-  border: 1px solid var(--color-text);
-  background: transparent;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
   opacity: 0;
   pointer-events: none;
   will-change: transform, opacity;
   transition: opacity 0.35s var(--ease-out-expo);
   mix-blend-mode: difference;
+}
+
+.mouse__cursor-dot {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--color-text);
+  opacity: 0.9;
+  transition: inset 0.35s var(--ease-out-expo), opacity 0.35s var(--ease-out-expo);
+}
+
+.mouse__cursor-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--color-text);
+  opacity: 0.55;
+  will-change: transform;
+  transition: opacity 0.4s var(--ease-out-expo);
+}
+
+.mouse__cursor-glow {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-text) 28%, transparent) 0%,
+    transparent 70%
+  );
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.mouse__cursor.is-near .mouse__cursor-dot {
+  inset: 4px;
+  opacity: 0.75;
+}
+
+.mouse__cursor.is-near .mouse__cursor-ring {
+  opacity: 0.85;
+}
+
+.mouse__cursor.is-pressed .mouse__cursor-dot {
+  inset: 2px;
+  opacity: 1;
+}
+
+.mouse__cursor.is-pressed .mouse__cursor-ring {
+  opacity: 0.35;
+}
+
+/* Concept opening — holds briefly before letters awaken */
+.mouse__opening {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  margin: 0;
+  font-family: var(--font-primary);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 /* Subtle energy whisper — thin bottom line */
@@ -121,7 +187,8 @@
   display: inline-block;
   position: relative;
   font-weight: 400;
-  will-change: transform, font-weight, text-shadow, filter;
+  font-optical-sizing: auto;
+  will-change: transform, font-weight, text-shadow, filter, letter-spacing;
   transform-origin: center bottom;
   backface-visibility: hidden;
 }
@@ -130,6 +197,17 @@
   color: transparent;
   -webkit-text-stroke: 1.5px var(--color-text);
   text-shadow: none;
+}
+
+/* Soft outline mix — typography participates without killing readability */
+.mouse__letter.is-soft-outline {
+  -webkit-text-stroke: calc(1.2px * var(--outline-mix, 0))
+    color-mix(in srgb, var(--color-text) calc(var(--outline-mix, 0) * 100%), transparent);
+  color: color-mix(
+    in srgb,
+    var(--color-text) calc((1 - var(--outline-mix, 0) * 0.55) * 100%),
+    transparent
+  );
 }
 
 .mouse__word.is-exploding .mouse__letter {
@@ -153,11 +231,14 @@
 
 .mouse__ending-title {
   font-family: var(--font-display);
-  font-size: clamp(2rem, 6vw, 4.5rem);
-  font-weight: var(--display-weight, 600);
-  letter-spacing: var(--display-tracking, -0.03em);
+  font-size: clamp(1.5rem, 4.5vw, 3.25rem);
+  font-weight: var(--display-weight, 500);
+  letter-spacing: var(--display-tracking, -0.02em);
   color: var(--color-text);
-  line-height: 1;
+  line-height: 1.15;
+  text-align: center;
+  max-width: 16em;
+  padding: 0 1rem;
 }
 
 .mouse__replay {
@@ -223,7 +304,7 @@
   }
 
   .mouse__ending-title {
-    font-size: clamp(1.75rem, 10vw, 3rem);
+    font-size: clamp(1.35rem, 7vw, 2.25rem);
   }
 }
 

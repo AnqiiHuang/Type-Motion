@@ -1,37 +1,34 @@
 /**
  * Section 4 — Wave Typography
  *
- * "BRAND DESIGN" letters undulate in a continuous sine wave.
- * Hover → amplitude rises. Click → ease back to baseline.
+ * Per-letter organisms undulate with session-seeded tempo & direction.
+ * Hover intensifies. Click restores calm.
  */
 
 import { ANIMATION } from '../config.js';
 import { prefersReducedMotion } from '../utils/animation.js';
+import { SESSION } from '../utils/session.js';
 
 const TEXT = 'BRAND DESIGN';
 
 const WAVE = {
-  /** Baseline amplitude (px) */
   baseAmp: 14,
-  /** Hover / excited amplitude (px) */
   hotAmp: 42,
-  /** Wave spatial frequency — radians per letter index */
   frequency: 0.55,
-  /** Wave speed — radians per second */
   speed: 2.4,
-  /** Secondary rotation amplitude (degrees) */
   rotateAmp: 4,
 };
 
 /**
- * Build letter / space spans from text
  * @param {HTMLElement} container
  * @param {string} text
- * @returns {HTMLElement[]} letter elements only
+ * @returns {{ letters: HTMLElement[], personalities: object[] }}
  */
 function buildLetters(container, text) {
   container.textContent = '';
   const letters = [];
+  const personalities = [];
+  let letterIndex = 0;
 
   [...text].forEach((char) => {
     if (char === ' ') {
@@ -48,13 +45,23 @@ function buildLetters(container, text) {
     span.setAttribute('aria-hidden', 'true');
     container.appendChild(span);
     letters.push(span);
+
+    const seed = Math.sin(letterIndex * 19.19 + SESSION.tempo * 11) * 43758.5453;
+    const r = seed - Math.floor(seed);
+    personalities.push({
+      ampScale: 0.75 + r * 0.5,
+      speedScale: 0.82 + (1 - r) * 0.4,
+      rotateScale: 0.6 + r * 0.8,
+      phaseOffset: r * Math.PI * 2,
+      weightPulse: 0.35 + r * 0.4,
+    });
+    letterIndex += 1;
   });
 
-  return letters;
+  return { letters, personalities };
 }
 
 /**
- * Initialize Wave Typography section
  * @param {HTMLElement} section
  * @returns {Function} cleanup
  */
@@ -63,12 +70,17 @@ export function initWaveTypography(section) {
   const label = section.querySelector('.wave__label');
   if (!wordEl) return () => {};
 
-  const letters = buildLetters(wordEl, TEXT);
+  const { letters, personalities } = buildLetters(wordEl, TEXT);
   const reducedMotion = prefersReducedMotion();
   const cleanups = [];
 
-  // Amplitude proxy — GSAP tweens this for smooth hover/click transitions
-  const amp = { value: WAVE.baseAmp };
+  const speed = WAVE.speed * SESSION.tempo;
+  const freq = WAVE.frequency * SESSION.waveDir;
+  const rotAmp = WAVE.rotateAmp * SESSION.rotateRange;
+  const hotAmp = WAVE.hotAmp * SESSION.hoverIntensity;
+  const baseAmp = WAVE.baseAmp * SESSION.idleFloat;
+
+  const amp = { value: baseAmp };
   let running = false;
   let rafId = null;
   let startTime = performance.now();
@@ -88,9 +100,11 @@ export function initWaveTypography(section) {
         y: 0,
         duration: ANIMATION.duration.slow,
         ease: ANIMATION.ease.expo,
-        stagger: 0.035,
+        stagger: {
+          each: 0.035,
+          from: SESSION.waveDir === 1 ? 'start' : 'end',
+        },
         onComplete: () => {
-          // Clear entrance y so wave owns transform
           gsap.set(letters, { clearProps: 'y' });
         },
       });
@@ -110,15 +124,23 @@ export function initWaveTypography(section) {
   function tick(now) {
     if (!running) return;
 
-    const t = ((now - startTime) / 1000) * WAVE.speed;
+    const t = ((now - startTime) / 1000) * speed;
     const amplitude = amp.value;
+    const ampNorm = amplitude / baseAmp;
 
     letters.forEach((letter, i) => {
-      const phase = t + i * WAVE.frequency;
-      const y = Math.sin(phase) * amplitude;
-      const rot = Math.sin(phase + Math.PI / 4) * WAVE.rotateAmp * (amplitude / WAVE.baseAmp);
+      const p = personalities[i];
+      const phase = t * p.speedScale + i * freq + p.phaseOffset;
+      const y = Math.sin(phase) * amplitude * p.ampScale;
+      const rot =
+        Math.sin(phase + Math.PI / 4) * rotAmp * p.rotateScale * ampNorm;
 
-      letter.style.transform = `translate3d(0, ${y}px, 0) rotate(${rot}deg)`;
+      // Typography layer — weight breathes slightly with the wave crest
+      const crest = (Math.sin(phase) + 1) * 0.5;
+      const weight = 400 + crest * 180 * p.weightPulse * Math.min(1.4, ampNorm);
+
+      letter.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0) rotate(${rot.toFixed(2)}deg)`;
+      letter.style.fontWeight = String(Math.round(weight));
     });
 
     rafId = requestAnimationFrame(tick);
@@ -151,20 +173,18 @@ export function initWaveTypography(section) {
   // ── Interaction ─────────────────────────────────────────────────────────
   const onEnter = () => {
     if (excited) return;
-    setAmplitude(WAVE.hotAmp, ANIMATION.duration.slow);
+    setAmplitude(hotAmp, ANIMATION.duration.slow);
   };
 
   const onLeave = () => {
     if (excited) return;
-    setAmplitude(WAVE.baseAmp, ANIMATION.duration.normal);
+    setAmplitude(baseAmp, ANIMATION.duration.normal);
   };
 
-  /** Click restores calm baseline wave */
   const onClick = () => {
     excited = false;
-    setAmplitude(WAVE.baseAmp, ANIMATION.duration.slow);
+    setAmplitude(baseAmp, ANIMATION.duration.slow);
 
-    // Brief label feedback
     if (label) {
       gsap.fromTo(
         label,
@@ -178,13 +198,11 @@ export function initWaveTypography(section) {
   section.addEventListener('mouseleave', onLeave);
   section.addEventListener('click', onClick);
 
-  // Touch: first tap boosts, second restores
   const onTouch = (e) => {
-    // Avoid double-firing with click on some devices
     e.preventDefault();
     if (!excited) {
       excited = true;
-      setAmplitude(WAVE.hotAmp, ANIMATION.duration.slow);
+      setAmplitude(hotAmp, ANIMATION.duration.slow);
     } else {
       onClick();
     }
@@ -198,7 +216,6 @@ export function initWaveTypography(section) {
     section.removeEventListener('touchend', onTouch);
   });
 
-  // Run only while in viewport
   const visibility = ScrollTrigger.create({
     trigger: section,
     start: 'top bottom',
@@ -209,10 +226,9 @@ export function initWaveTypography(section) {
     onLeaveBack: stopWave,
   });
 
-  // Reduced motion: static gentle offset, no loop
   if (reducedMotion) {
     letters.forEach((letter, i) => {
-      const y = Math.sin(i * WAVE.frequency) * (WAVE.baseAmp * 0.4);
+      const y = Math.sin(i * Math.abs(freq)) * (baseAmp * 0.4);
       letter.style.transform = `translate3d(0, ${y}px, 0)`;
     });
   } else {

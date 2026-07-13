@@ -4,7 +4,7 @@
  */
 
 export const ANIMATION = {
-  // GSAP ease strings
+  // GSAP ease strings — keep one vocabulary across the piece
   ease: {
     out: 'power3.out',
     inOut: 'power3.inOut',
@@ -13,6 +13,7 @@ export const ANIMATION = {
     spring: 'elastic.out(1, 0.55)',
     softSpring: 'back.out(1.6)',
     soft: 'power2.out',
+    settle: 'power3.out',
   },
 
   // Duration in seconds
@@ -23,12 +24,26 @@ export const ANIMATION = {
     scroll: 1.6,
     climax: 2.2,
     ending: 1.6,
+    opening: 1.6,
   },
 
   // Mouse parallax
   parallax: {
     strength: 40, // max displacement in px
     duration: 1.35, // follow lag
+  },
+
+  /**
+   * Hover response layers (ms) — properties awaken in sequence,
+   * never all at once. Used as lag multipliers on delayed targets.
+   */
+  layers: {
+    scale: 0,
+    rotate: 40,
+    weight: 80,
+    tracking: 120,
+    blur: 160,
+    settle: 220,
   },
 };
 
@@ -55,10 +70,12 @@ export const EXPERIENCE = {
   idleEndingMinEnergy: 0.12,
   /** Climax reform word */
   climaxWord: 'MOTION',
-  /** Ending copy */
-  endingTitle: 'Thank You',
-  idleEndingTitle: 'Still',
-  endingCta: 'Move Again',
+  /** Opening hold before interaction (ms) */
+  openingHoldMs: 1600,
+  /** Fallback ending copy (session may override) */
+  endingTitle: 'Typography Never Stands Still.',
+  idleEndingTitle: 'Still Moving.',
+  endingCta: 'Play Again',
 };
 
 /** Coordinated palette sets — applied randomly on load */
