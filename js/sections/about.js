@@ -1,15 +1,11 @@
 /**
  * Section 8 — About / Ending
  *
- * Project statement → back to top.
+ * Closing statement → credit. Soft restart lives in the header.
  */
 
 import { ANIMATION } from '../config.js';
-import {
-  resetStageProgress,
-  hideContinueHint,
-} from '../utils/feedback.js';
-import { resetMouseInteraction } from './mouse-interaction.js';
+import { hideContinueHint } from '../utils/feedback.js';
 
 /**
  * Initialize About section
@@ -19,14 +15,16 @@ import { resetMouseInteraction } from './mouse-interaction.js';
 export function initAbout(section) {
   const eyebrow = section.querySelector('.about__eyebrow');
   const title = section.querySelector('.about__title');
+  const tagline =
+    section.querySelector('[data-about-tagline]') ||
+    section.querySelector('.about__tagline');
   const rule = section.querySelector('.about__rule');
   const body = section.querySelector('.about__body');
   const footer = section.querySelector('.about__footer');
-  const restartBtn = section.querySelector('[data-about-restart]');
 
   const cleanups = [];
 
-  const prep = [eyebrow, title, rule, body, footer, restartBtn].filter(Boolean);
+  const prep = [eyebrow, title, tagline, rule, body, footer].filter(Boolean);
 
   gsap.set(prep, { opacity: 0, y: 24 });
 
@@ -56,13 +54,22 @@ export function initAbout(section) {
           '-=0.2'
         )
         .to(
+          tagline,
+          {
+            opacity: 1,
+            y: 0,
+            duration: ANIMATION.duration.normal,
+          },
+          '-=0.35'
+        )
+        .to(
           rule,
           {
             opacity: 1,
             y: 0,
             duration: ANIMATION.duration.normal,
           },
-          '-=0.45'
+          '-=0.4'
         )
         .to(
           body,
@@ -82,39 +89,8 @@ export function initAbout(section) {
           },
           '-=0.4'
         );
-
-      if (restartBtn) {
-        tl.to(
-          restartBtn,
-          {
-            opacity: 1,
-            y: 0,
-            duration: ANIMATION.duration.normal,
-          },
-          '-=0.25'
-        );
-      }
     },
   });
-
-  const onRestart = (e) => {
-    e.preventDefault();
-    hideContinueHint();
-    resetStageProgress();
-    resetMouseInteraction();
-
-    const hint = document.querySelector('.scroll-hint');
-    const hintText = hint?.querySelector('.scroll-hint__text');
-    if (hintText) hintText.textContent = 'Scroll';
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    window.setTimeout(() => ScrollTrigger.refresh(), 600);
-  };
-
-  if (restartBtn) {
-    restartBtn.addEventListener('click', onRestart);
-    cleanups.push(() => restartBtn.removeEventListener('click', onRestart));
-  }
 
   cleanups.push(() => entrance.kill());
 

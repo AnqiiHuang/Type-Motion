@@ -67,14 +67,32 @@ export function wait(ms) {
 }
 
 /**
+ * Global fixed scroll cue only (not per-section hints).
+ * @returns {HTMLElement | null}
+ */
+function getGlobalScrollHint() {
+  return document.querySelector('.scroll-hint:not(.scroll-hint--section)');
+}
+
+/**
+ * Hide all per-section scroll cues so they never stack with the global hint.
+ */
+function hideSectionScrollHints() {
+  document
+    .querySelectorAll('.scroll-hint--section.is-visible')
+    .forEach((el) => el.classList.remove('is-visible'));
+}
+
+/**
  * Show the global scroll hint (homepage + section 2 continue cue).
  * @param {string} [copy]
  */
 export function showContinueHint(copy = 'Scroll') {
-  const hint = document.querySelector('.scroll-hint');
+  const hint = getGlobalScrollHint();
   const text = hint?.querySelector('.scroll-hint__text');
   if (!hint) return;
 
+  hideSectionScrollHints();
   if (text) text.textContent = copy;
   hint.classList.add('is-visible');
   hint.classList.remove('is-continue');
@@ -85,10 +103,11 @@ export function showContinueHint(copy = 'Scroll') {
  * Hide global scroll hint (hero Scroll cue).
  */
 export function hideContinueHint() {
-  const hint = document.querySelector('.scroll-hint');
+  const hint = getGlobalScrollHint();
   const text = hint?.querySelector('.scroll-hint__text');
   if (text) gsap.set(text, { y: 0 });
   hint?.classList.remove('is-visible', 'is-continue');
+  if (hint) gsap.set(hint, { clearProps: 'opacity' });
 }
 
 /**

@@ -12,13 +12,22 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* Prefer center, but never overflow into the fixed header */
+  justify-content: safe center;
   width: min(720px, 100%);
   margin: 0 auto;
   min-height: var(--section-min-height-svh);
-  padding: calc(var(--header-height) + var(--space-lg)) var(--space-md) var(--space-xl);
+  box-sizing: border-box;
+  padding: calc(var(--header-height) + var(--space-md)) var(--space-md) var(--space-xl);
   text-align: center;
   gap: var(--space-md);
+}
+
+@supports not (justify-content: safe center) {
+  .about__content {
+    justify-content: flex-start;
+    padding-top: calc(var(--header-height) + var(--space-lg));
+  }
 }
 
 .about__eyebrow {
@@ -37,6 +46,16 @@
   line-height: 0.95;
   letter-spacing: var(--display-tracking);
   color: var(--color-text);
+  opacity: 0;
+}
+
+.about__tagline {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
   opacity: 0;
 }
 
@@ -72,19 +91,27 @@
 }
 
 .about__credit {
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 500;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--color-text-muted);
 }
 
-.about__meta {
-  font-size: 0.75rem;
+.about__author {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--color-text);
+}
+
+.about__year {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
   color: var(--color-text-muted);
-  opacity: 0.7;
-  max-width: 22rem;
-  line-height: 1.5;
+  opacity: 0.75;
 }
 
 .about__restart {
@@ -132,6 +159,7 @@
 
 @media (max-width: 768px) {
   .about__content {
+    padding-top: calc(var(--header-height) + var(--space-md));
     padding-left: var(--space-sm);
     padding-right: var(--space-sm);
     padding-bottom: var(--space-lg);

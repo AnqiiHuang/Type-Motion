@@ -30,6 +30,17 @@
 </head>
 <body>
 
+  <!-- Loading overlay — avoids white screen before Hero -->
+  <div class="loader" data-loader aria-busy="true" aria-live="polite">
+    <div class="loader__inner">
+      <p class="loader__word" aria-hidden="true">TYPE</p>
+      <p class="loader__status">Loading...</p>
+      <div class="loader__track" aria-hidden="true">
+        <span class="loader__bar" data-loader-bar></span>
+      </div>
+    </div>
+  </div>
+
   <!-- Fixed UI chrome -->
   <header class="site-header">
     <span class="site-header__label">Type Motion</span>
@@ -43,12 +54,15 @@
         <button type="button" class="site-header__theme-btn" data-theme-option="luxury" aria-pressed="false">Luxury</button>
         <button type="button" class="site-header__theme-btn" data-theme-option="editorial" aria-pressed="false">Editorial</button>
       </nav>
+      <button type="button" class="site-header__restart" data-restart aria-label="Restart experience">Restart</button>
     </div>
   </header>
 
   <div class="scroll-hint" aria-hidden="true">
-    <span class="scroll-hint__text">Scroll</span>
-    <span class="scroll-hint__line"></span>
+    <span class="scroll-hint__text">Scroll to Start</span>
+    <span class="scroll-hint__mouse" aria-hidden="true">
+      <span class="scroll-hint__mouse-wheel"></span>
+    </span>
   </div>
 
   <main id="main">
@@ -66,6 +80,7 @@
         <h1 class="hero__title" aria-label="Type">
           <span class="hero__word" data-hero-word>TYPE</span>
         </h1>
+        <p class="hero__subtitle" data-hero-subtitle>Interactive Typography Experience</p>
       </div>
     </section>
 
@@ -78,6 +93,15 @@
       aria-label="Interactive Typography Tutorial"
     >
       <div class="mouse__progress" aria-hidden="true"></div>
+      <ol class="mouse__steps" data-mouse-steps aria-hidden="true">
+        <li class="mouse__step" data-step="move">Move Cursor</li>
+        <li class="mouse__step-arrow" aria-hidden="true">↓</li>
+        <li class="mouse__step" data-step="click">Click</li>
+        <li class="mouse__step-arrow" aria-hidden="true">↓</li>
+        <li class="mouse__step" data-step="hold">Hold</li>
+        <li class="mouse__step-arrow" aria-hidden="true">↓</li>
+        <li class="mouse__step" data-step="drag">Drag</li>
+      </ol>
       <div class="mouse__content">
         <p class="mouse__opening" data-mouse-opening aria-hidden="true">
           <span data-opening-text>Move the Type</span>
@@ -85,7 +109,9 @@
         <p class="mouse__label" data-mouse-label aria-live="polite"></p>
         <h2 class="mouse__word" data-mouse-word aria-label="Design">DESIGN</h2>
         <div class="mouse__ending" data-mouse-ending aria-hidden="true">
-          <p class="mouse__ending-title" data-ending-title>Typography Never Stands Still.</p>
+          <p class="mouse__ending-kicker" data-ending-kicker>Great!</p>
+          <p class="mouse__ending-title" data-ending-title>Continue Scrolling</p>
+          <p class="mouse__ending-sub" data-ending-sub>Explore More</p>
           <button type="button" class="mouse__replay" data-mouse-replay hidden>Replay</button>
         </div>
       </div>
@@ -294,8 +320,9 @@
       aria-label="About"
     >
       <div class="about__content">
-        <p class="about__eyebrow">About</p>
-        <h2 class="about__title">Type is Alive</h2>
+        <p class="about__eyebrow">Experiment Complete</p>
+        <h2 class="about__title">Thank You</h2>
+        <p class="about__tagline" data-about-tagline>Keep Exploring Typography</p>
         <span class="about__rule" aria-hidden="true"></span>
         <div class="about__body">
           <p>Type Motion explores typography through interaction.</p>
@@ -303,9 +330,9 @@
           <p>Rather than simply reading typography, users discover it through movement, curiosity and play.</p>
         </div>
         <footer class="about__footer">
-          <p class="about__credit">Type Motion</p>
-          <p class="about__meta">You changed typography. Typography changed you.</p>
-          <button type="button" class="about__restart" data-about-restart>Back to top</button>
+          <p class="about__credit">Designed &amp; Developed by</p>
+          <p class="about__author">Anqi Huang</p>
+          <p class="about__year">2026</p>
         </footer>
       </div>
     </section>

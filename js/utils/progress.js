@@ -4,6 +4,7 @@
  */
 
 import { PROGRESS_SECTIONS } from '../config.js';
+import { hideContinueHint } from './feedback.js';
 
 /**
  * @returns {Function} cleanup
@@ -53,7 +54,7 @@ export function initProgressIndicator() {
     hint.setAttribute('aria-hidden', 'true');
     hint.innerHTML =
       '<span class="scroll-hint__text">Scroll</span>' +
-      '<span class="scroll-hint__line"></span>';
+      '<span class="scroll-hint__mouse" aria-hidden="true"><span class="scroll-hint__mouse-wheel"></span></span>';
     section.appendChild(hint);
     sectionHints.set(item.id, hint);
   });
@@ -68,6 +69,8 @@ export function initProgressIndicator() {
   let activeId = null;
 
   function setSectionHint(id) {
+    // Never stack with the fixed global scroll cue
+    hideContinueHint();
     sectionHints.forEach((hint, key) => {
       hint.classList.toggle('is-visible', key === id);
     });

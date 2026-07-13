@@ -39,11 +39,22 @@ const STORAGE_KEY = 'type-motion-theme';
 const LAST_KEY = 'type-motion-theme-last';
 const DEFAULT_THEME = 'minimal';
 
+/** Theme chosen at boot — restored on soft restart */
+let bootThemeId = DEFAULT_THEME;
+
 /**
  * @returns {string}
  */
 export function getTheme() {
   return document.documentElement.getAttribute('data-theme') || DEFAULT_THEME;
+}
+
+/**
+ * Theme selected when the page first booted.
+ * @returns {string}
+ */
+export function getBootTheme() {
+  return bootThemeId;
 }
 
 /**
@@ -173,6 +184,7 @@ function syncControls(themeId) {
  */
 export function initThemeSystem() {
   const initial = pickRandomTheme();
+  bootThemeId = initial;
   setTheme(initial, { animate: false });
 
   // Header + section buttons (event delegation)

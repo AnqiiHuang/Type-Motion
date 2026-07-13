@@ -50,6 +50,26 @@ const SLIDERS = {
   },
 };
 
+/** @type {null | (() => void)} */
+let resetFontPlaygroundFn = null;
+
+/**
+ * Restore playground sliders / sample to defaults.
+ */
+export function resetFontPlayground() {
+  resetFontPlaygroundFn?.();
+}
+
+/**
+ * Soft start → stronger mid/late response for hover axes.
+ * @param {number} t
+ */
+function responseCurve(t) {
+  const x = Math.max(0, Math.min(1, t));
+  const eased = x * x * (3 - 2 * x);
+  return eased * Math.pow(x, 0.55) * (0.55 + 0.9 * x);
+}
+
 /**
  * @param {HTMLElement} section
  * @returns {Function} cleanup
@@ -147,7 +167,7 @@ export function initFontPlayground(section) {
     const dx = (e.clientX - cx) / (rect.width * 0.5);
     const dy = (e.clientY - cy) / (rect.height * 0.5);
     const dist = Math.min(1, Math.hypot(dx, dy));
-    const proximity = 1 - dist;
+    const proximity = responseCurve(1 - dist);
 
     if (lastX || lastY) {
       hoverTravel += Math.hypot(e.clientX - lastX, e.clientY - lastY);
@@ -156,9 +176,9 @@ export function initFontPlayground(section) {
     lastY = e.clientY;
 
     gsap.to(hoverBoost, {
-      weight: proximity * 280,
-      width: proximity * 28 * (dx >= 0 ? 1 : -1),
-      scale: 1 + proximity * 0.08,
+      weight: proximity * 360,
+      width: proximity * 36 * (dx >= 0 ? 1 : -1),
+      scale: 1 + proximity * 0.12,
       duration: ANIMATION.duration.hover,
       ease: ANIMATION.ease.soft,
       overwrite: 'auto',
@@ -240,11 +260,41 @@ export function initFontPlayground(section) {
   if (controls) gsap.set(controls, { y: 20 });
   if (preview) gsap.set(preview, { opacity: 0 });
 
+  resetFontPlaygroundFn = () => {
+    completed = false;
+    hoverTravel = 0;
+    lastX = 0;
+    lastY = 0;
+    Object.keys(SLIDERS).forEach((key) => {
+      state[key] = SLIDERS[key].default;
+      proxy[key] = SLIDERS[key].default;
+      updateLabel(key, SLIDERS[key].default);
+    });
+    inputs.forEach((input) => {
+      const key = input.dataset.playgroundSlider;
+      const def = SLIDERS[key];
+      if (def) input.value = String(def.default);
+    });
+    hoverBoost.weight = 0;
+    hoverBoost.width = 0;
+    hoverBoost.scale = 1;
+    gsap.killTweensOf(proxy);
+    gsap.killTweensOf(hoverBoost);
+    applyVisuals();
+    if (cue) {
+      cue.textContent = 'Variable Font';
+      cue.classList.add('is-stage');
+      cue.classList.remove('is-feedback');
+      gsap.set(cue, { clearProps: 'opacity,transform' });
+    }
+  };
+
   cleanups.push(() => {
     entrance.kill();
     gsap.killTweensOf(proxy);
     gsap.killTweensOf(hoverBoost);
     gsap.killTweensOf(sample);
+    resetFontPlaygroundFn = null;
   });
 
   return () => cleanups.forEach((fn) => fn());

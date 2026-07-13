@@ -1,8 +1,8 @@
 /**
  * Type Motion — Main Entry
  *
- * Orchestrates global systems + section initialization.
- * Each section is lazy-loaded when it enters the viewport.
+ * Loader → global systems → sections.
+ * Soft restart returns to Hero without a full reload.
  */
 
 import { registerGSAPPlugins, lazyInitSection } from './utils/animation.js';
@@ -13,6 +13,8 @@ import { initTrail } from './utils/trail.js';
 import { initCursorSystem } from './utils/cursor.js';
 import { initProgressIndicator } from './utils/progress.js';
 import { initSectionSnap } from './utils/snap.js';
+import { runLoader } from './utils/loader.js';
+import { initRestart } from './utils/restart.js';
 import { initHero } from './sections/hero.js';
 import { initMouseInteraction } from './sections/mouse-interaction.js';
 import { initFontPlayground } from './sections/font-playground.js';
@@ -34,15 +36,15 @@ const SECTIONS = [
   { selector: '#about', init: initAbout },
 ];
 
-function init() {
+async function init() {
   registerGSAPPlugins();
 
-  // Always start at the top on refresh / revisit so hero entrance can replay
   if ('scrollRestoration' in history) {
     history.scrollRestoration = 'manual';
   }
   window.scrollTo(0, 0);
 
+  // Theme first so loader inherits the active palette
   const cleanups = [
     initThemeSystem(),
     initPointer(),
@@ -50,6 +52,8 @@ function init() {
     initAudio(),
     initCursorSystem(),
   ];
+
+  await runLoader();
 
   SECTIONS.forEach(({ selector, init: initSection, eager }) => {
     if (eager) {
@@ -64,22 +68,25 @@ function init() {
   });
 
   cleanups.push(initProgressIndicator());
-  // After section pins exist so snap points include pin spacers
   cleanups.push(initSectionSnap());
+  cleanups.push(initRestart());
 
-  // Refresh ScrollTrigger after fonts load; keep scroll pinned at top
+  // Signal Hero (and any listeners) that the experience may begin
+  window.dispatchEvent(new CustomEvent('typemotion:ready'));
+
   document.fonts.ready.then(() => {
     window.scrollTo(0, 0);
     ScrollTrigger.refresh();
   });
-
 
   return () => cleanups.forEach((fn) => fn && fn());
 }
 
 // Boot
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', () => {
+    init();
+  });
 } else {
   init();
 }

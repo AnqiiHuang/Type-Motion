@@ -14,6 +14,8 @@
   height: var(--header-height);
   padding: 0 var(--space-md);
   pointer-events: none;
+  background: var(--color-bg);
+  transition: background var(--theme-duration, 0.7s) var(--theme-ease, var(--ease-out-expo));
 }
 
 .site-header__label {
@@ -122,6 +124,94 @@
 .site-header__theme-btn:focus-visible {
   outline: 1px solid var(--color-text);
   outline-offset: 3px;
+}
+
+.site-header__restart {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0.2rem 0;
+  margin-left: 0.25rem;
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out-expo);
+}
+
+.site-header__restart:hover {
+  color: var(--color-text);
+}
+
+.site-header__restart:focus-visible {
+  outline: 1px solid var(--color-text);
+  outline-offset: 3px;
+}
+
+/* Loading overlay */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  color: var(--color-text);
+  transition: opacity var(--duration-slow) var(--ease-out-expo),
+    visibility var(--duration-slow) var(--ease-out-expo);
+}
+
+.loader.is-done {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loader__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.loader__word {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 10vw, 5rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--color-text);
+}
+
+.loader__status {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.loader__track {
+  width: 6rem;
+  height: 1px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.loader__bar {
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: var(--color-text);
+  transform-origin: left center;
+}
+
+body.is-loading {
+  overflow: hidden;
 }
 
 /* Scroll hint — bottom center */
@@ -309,9 +399,56 @@ html[data-cursor='text'] body {
   animation: scrollLinePulse 2s var(--ease-in-out) infinite;
 }
 
+.scroll-hint__mouse {
+  display: block;
+  width: 1.125rem;
+  height: 1.75rem;
+  border: 1px solid var(--color-text-muted);
+  border-radius: 0.625rem;
+  position: relative;
+  opacity: 0.85;
+  will-change: transform;
+  animation: scrollMouseFloat 2.2s var(--ease-in-out) infinite;
+}
+
+.scroll-hint__mouse-wheel {
+  position: absolute;
+  top: 0.35rem;
+  left: 50%;
+  width: 2px;
+  height: 0.35rem;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--color-text-muted);
+  will-change: transform, opacity;
+  animation: scrollWheelPulse 2.2s var(--ease-in-out) infinite;
+}
+
 @keyframes scrollLinePulse {
   0%, 100% { transform: scaleY(1); opacity: 0.6; }
   50% { transform: scaleY(0.6); opacity: 1; }
+}
+
+@keyframes scrollMouseFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+@keyframes scrollWheelPulse {
+  0%, 100% { opacity: 0.45; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-hint__mouse,
+  .scroll-hint__mouse-wheel,
+  .scroll-hint__line {
+    animation: none;
+  }
+
+  .loader.is-done {
+    transition: none;
+  }
 }
 
 @media (max-width: 768px) {
@@ -330,6 +467,10 @@ html[data-cursor='text'] body {
   .site-header__theme-btn {
     font-size: 0.5625rem;
     letter-spacing: 0.04em;
+  }
+
+  .site-header__restart {
+    font-size: 0.5625rem;
   }
 
   .scroll-hint {

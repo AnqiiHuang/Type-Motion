@@ -50,7 +50,7 @@ export const ANIMATION = {
   },
 };
 
-/** Guided tutorial — Move → Click → Hold → Release */
+/** Guided tutorial — Move → Click → Hold → Drag */
 export const EXPERIENCE = {
   /** Opening concept hold (ms) */
   openingHoldMs: 1000,
@@ -70,27 +70,29 @@ export const EXPERIENCE = {
   dragDistance: 180,
   /** Drag: minimum drag time (ms) */
   dragMinMs: 700,
-  /** Quiet hold before Replay / continue hint (ms) */
-  endingHoldMs: 800,
+  /** Quiet hold before continue hint (ms) */
+  endingHoldMs: 2000,
   /** Clicks required before advancing */
   clicksRequired: 2,
   /** Copy */
-  endingTitle: 'Typography Never Stands Still.',
+  endingKicker: 'Great!',
+  endingTitle: 'Continue Scrolling',
+  endingSub: 'Explore More',
   endingCta: 'Replay',
   stages: {
-    move: 'Move your cursor',
-    moveDone: '✓ Cursor detected',
-    click: 'Click anywhere',
-    clickAgain: 'Click again · try another spot',
-    clickDone: '✓ Nice!',
-    hold: 'Hold mouse button',
-    holding: 'Keep holding...',
-    release: 'Now release',
-    holdDone: 'Perfect!',
-    drag: 'Drag the type',
-    dragging: 'Keep dragging...',
-    dragRelease: 'Release to finish',
-    dragDone: '✓ Great!',
+    move: 'Move Cursor',
+    moveDone: '✓',
+    click: 'Click',
+    clickAgain: 'Click',
+    clickDone: '✓',
+    hold: 'Hold',
+    holding: 'Hold',
+    release: 'Release',
+    holdDone: '✓',
+    drag: 'Drag',
+    dragging: 'Drag',
+    dragRelease: 'Release',
+    dragDone: '✓',
   },
   feedback: {
     great: 'Great!',

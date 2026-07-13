@@ -1,13 +1,23 @@
 /**
  * Section 1 — Landing Hero
  *
- * Concept opening → TYPE entrance → parallax →
- * scroll exit with restrained stretch / disperse / morph
+ * TYPE entrance → subtitle + scroll cue →
+ * scrubbed scale / fade exit (no abrupt cut)
  */
 
 import { ANIMATION } from '../config.js';
 import { prefersReducedMotion } from '../utils/animation.js';
 import { SESSION } from '../utils/session.js';
+
+/** @type {null | (() => void)} */
+let replayHeroFn = null;
+
+/**
+ * Replay hero entrance after a soft restart.
+ */
+export function resetHero() {
+  replayHeroFn?.();
+}
 
 /**
  * @param {HTMLElement} container
@@ -34,74 +44,113 @@ function buildLetters(container, word) {
 export function initHero(section) {
   const word = section.querySelector('[data-hero-word]');
   const concept = section.querySelector('[data-hero-concept]');
+  const subtitle = section.querySelector('[data-hero-subtitle]');
   const bg = section.querySelector('.hero__bg');
-  const scrollHint = document.querySelector('.scroll-hint');
+  const scrollHint = document.querySelector(
+    '.scroll-hint:not(.scroll-hint--section)'
+  );
   const hintText = scrollHint?.querySelector('.scroll-hint__text');
   const headerLabel = document.querySelector('.site-header__label');
   const headerActions = document.querySelector('.site-header__actions');
 
   if (!word) return () => {};
 
-  const letters = buildLetters(word, word.textContent?.trim() || 'TYPE');
+  let letters = buildLetters(word, word.textContent?.trim() || 'TYPE');
   const reducedMotion = prefersReducedMotion();
   const cleanups = [];
+  /** @type {gsap.core.Timeline | null} */
+  let entranceTl = null;
+  /** @type {gsap.core.Timeline | null} */
+  let scrollTl = null;
+  /** @type {ScrollTrigger | null} */
+  let hintTrigger = null;
 
   if (concept) {
     concept.textContent = SESSION.openingLine;
   }
-  if (hintText) hintText.textContent = 'Scroll';
+  if (hintText) hintText.textContent = 'Scroll to Start';
 
-  // Top bar is available immediately on load / refresh
   headerLabel?.classList.add('is-visible');
   headerActions?.classList.add('is-visible');
 
-  // ── Concept Opening → TYPE ──────────────────────────────────────────────
-  gsap.set(letters, { opacity: 0, scale: 1.06, y: 8 });
-  if (concept) gsap.set(concept, { opacity: 0, y: 6 });
-
-  const hold = reducedMotion ? 0.25 : Math.max(0.9, ANIMATION.duration.opening * 0.95);
-  const entranceTl = gsap.timeline({ delay: 0.15 });
-
-  if (concept) {
-    entranceTl
-      .to(concept, {
-        opacity: 1,
-        y: 0,
-        duration: ANIMATION.duration.slow,
-        ease: ANIMATION.ease.out,
-      })
-      .to(concept, {
-        opacity: 0,
-        y: -10,
-        duration: ANIMATION.duration.normal,
-        ease: ANIMATION.ease.smooth,
-        delay: hold,
-      });
-  } else {
-    entranceTl.to({}, { duration: 0.2 });
+  function killEntrance() {
+    entranceTl?.kill();
+    entranceTl = null;
   }
 
-  entranceTl.to(
-    letters,
-    {
-      opacity: 1,
-      scale: 1,
-      y: 0,
-      duration: ANIMATION.duration.slow,
-      ease: ANIMATION.ease.expo,
-      stagger: 0.04,
-    },
-    concept ? '-=0.15' : 0
-  );
+  function playEntrance({ fromLoader = false } = {}) {
+    killEntrance();
 
-  // Scroll cue after entrance
-  entranceTl.call(
-    () => {
-      scrollHint?.classList.add('is-visible');
-    },
-    null,
-    '-=0.25'
-  );
+    letters = buildLetters(word, 'TYPE');
+    gsap.set(letters, { opacity: 0, scale: 1.08, y: 12 });
+    if (concept) gsap.set(concept, { opacity: 0, y: 6 });
+    if (subtitle) gsap.set(subtitle, { opacity: 0, y: 10 });
+    gsap.set(word, { clearProps: 'x,y,scale,opacity' });
+
+    const hold = reducedMotion ? 0.15 : Math.max(0.7, ANIMATION.duration.opening * 0.85);
+    entranceTl = gsap.timeline({ delay: fromLoader ? 0.05 : 0.12 });
+
+    if (concept && !fromLoader) {
+      entranceTl
+        .to(concept, {
+          opacity: 1,
+          y: 0,
+          duration: ANIMATION.duration.slow,
+          ease: ANIMATION.ease.out,
+        })
+        .to(concept, {
+          opacity: 0,
+          y: -10,
+          duration: ANIMATION.duration.normal,
+          ease: ANIMATION.ease.smooth,
+          delay: hold,
+        });
+    } else if (concept) {
+      gsap.set(concept, { opacity: 0 });
+      entranceTl.to({}, { duration: 0.05 });
+    }
+
+    entranceTl.to(
+      letters,
+      {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        duration: ANIMATION.duration.slow,
+        ease: ANIMATION.ease.expo,
+        stagger: 0.045,
+      },
+      concept && !fromLoader ? '-=0.12' : 0
+    );
+
+    if (subtitle) {
+      entranceTl.to(
+        subtitle,
+        {
+          opacity: 1,
+          y: 0,
+          duration: ANIMATION.duration.normal,
+          ease: ANIMATION.ease.out,
+        },
+        '-=0.35'
+      );
+    }
+
+    entranceTl.call(
+      () => {
+        if (hintText) hintText.textContent = 'Scroll to Start';
+        scrollHint?.classList.add('is-visible');
+        gsap.set(scrollHint, { opacity: 1, clearProps: 'opacity' });
+      },
+      null,
+      '-=0.15'
+    );
+  }
+
+  // Defer first entrance until loader resolves (main.js dispatches)
+  const onReady = () => playEntrance({ fromLoader: true });
+  window.addEventListener('typemotion:ready', onReady, { once: true });
+  cleanups.push(() => window.removeEventListener('typemotion:ready', onReady));
 
   // ── Mouse parallax ──────────────────────────────────────────────────────
   if (!reducedMotion) {
@@ -125,13 +174,12 @@ export function initHero(section) {
     cleanups.push(() => window.removeEventListener('mousemove', onMouseMove));
   }
 
-  // ── Scroll transition — fade + soft stretch / disperse / morph ──────────
-  const mid = (letters.length - 1) / 2;
-  const scrollTl = gsap.timeline({
+  // ── Scroll exit — scale + fade (continuous, no cut) ─────────────────────
+  scrollTl = gsap.timeline({
     scrollTrigger: {
       trigger: section,
       start: 'top top',
-      end: '+=70%',
+      end: '+=75%',
       pin: true,
       scrub: ANIMATION.duration.scroll,
       anticipatePin: 1,
@@ -139,38 +187,44 @@ export function initHero(section) {
         scrollHint?.classList.remove('is-visible');
       },
       onEnterBack: () => {
-        if (hintText) hintText.textContent = 'Scroll';
+        if (hintText) hintText.textContent = 'Scroll to Start';
         scrollHint?.classList.add('is-visible');
       },
     },
   });
 
-  letters.forEach((letter, i) => {
-    const dir = i - mid;
+  scrollTl.fromTo(
+    word,
+    {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+    },
+    {
+      opacity: 0,
+      scale: 0.72,
+      y: -48,
+      duration: 1,
+      ease: 'none',
+      immediateRender: false,
+    },
+    0
+  );
+
+  if (subtitle) {
     scrollTl.fromTo(
-      letter,
-      {
-        opacity: 1,
-        scaleX: 1,
-        scaleY: 1,
-        x: 0,
-        y: 0,
-        skewX: 0,
-      },
+      subtitle,
+      { opacity: 1, y: 0 },
       {
         opacity: 0,
-        scaleX: 1.12 + Math.abs(dir) * 0.04,
-        scaleY: 0.92,
-        x: dir * 18,
-        y: Math.abs(dir) * -6,
-        skewX: dir * 2.5,
-        duration: 1,
+        y: -24,
+        duration: 0.7,
         ease: 'none',
         immediateRender: false,
       },
       0
     );
-  });
+  }
 
   scrollTl.fromTo(
     bg,
@@ -184,11 +238,10 @@ export function initHero(section) {
     0
   );
 
-  // Fade out scroll hint on scroll start
-  ScrollTrigger.create({
+  hintTrigger = ScrollTrigger.create({
     trigger: section,
     start: 'top top',
-    end: '+=10%',
+    end: '+=12%',
     scrub: true,
     onUpdate: (self) => {
       if (scrollHint) {
@@ -197,10 +250,19 @@ export function initHero(section) {
     },
   });
 
+  replayHeroFn = () => {
+    gsap.set(word, { clearProps: 'opacity,scale,x,y,transform' });
+    if (subtitle) gsap.set(subtitle, { clearProps: 'opacity,y,transform' });
+    if (bg) gsap.set(bg, { opacity: 0 });
+    playEntrance({ fromLoader: true });
+  };
+
   cleanups.push(() => {
-    entranceTl.kill();
-    scrollTl.scrollTrigger?.kill();
-    scrollTl.kill();
+    killEntrance();
+    scrollTl?.scrollTrigger?.kill();
+    scrollTl?.kill();
+    hintTrigger?.kill();
+    replayHeroFn = null;
   });
 
   return () => cleanups.forEach((fn) => fn());
