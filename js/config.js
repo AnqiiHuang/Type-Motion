@@ -50,7 +50,31 @@ export const ANIMATION = {
   },
 };
 
-/** Guided tutorial — Move → Tap → Hold → Drag */
+/**
+ * Coarse / touch primary input — used to branch gesture copy and stage order.
+ * Prefer pointer:coarse + hover:none; fall back to ScrollTrigger.isTouch.
+ * @returns {boolean}
+ */
+export function isCoarsePointer() {
+  if (typeof window === 'undefined') return false;
+  if (typeof ScrollTrigger !== 'undefined' && ScrollTrigger.isTouch === 1) {
+    return true;
+  }
+  return (
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(hover: none), (pointer: coarse)').matches
+  );
+}
+
+/**
+ * Fine pointer (mouse / trackpad) — desktop gesture vocabulary.
+ * @returns {boolean}
+ */
+export function isFinePointer() {
+  return !isCoarsePointer();
+}
+
+/** Guided tutorial — Desktop: Move → Click → Hold → Drag | Mobile: Touch → Hold → Drag */
 export const EXPERIENCE = {
   /** Opening concept hold (ms) */
   openingHoldMs: 1000,
@@ -72,7 +96,7 @@ export const EXPERIENCE = {
   dragMinMs: 700,
   /** Quiet hold before continue hint (ms) */
   endingHoldMs: 2000,
-  /** Clicks required before advancing */
+  /** Clicks / touches required before advancing */
   clicksRequired: 2,
   /** Copy */
   endingKicker: 'Great!',
@@ -81,18 +105,16 @@ export const EXPERIENCE = {
   endingCta: 'Replay',
   stages: {
     move: 'Move',
-    moveDone: '✓',
-    click: 'Tap',
-    clickAgain: 'Tap',
-    clickDone: '✓',
+    click: 'Click',
+    clickAgain: 'Click',
+    touch: 'Touch',
+    touchAgain: 'Touch',
     hold: 'Hold',
     holding: 'Hold',
-    release: 'Release to continue',
-    holdDone: '✓',
+    release: 'Release',
     drag: 'Drag',
     dragging: 'Drag',
-    dragRelease: 'Release to continue',
-    dragDone: '✓',
+    dragRelease: 'Release',
   },
   feedback: {
     great: 'Great!',
@@ -105,6 +127,30 @@ export const EXPERIENCE = {
 };
 
 /**
+ * Gesture stage keys for the current input modality.
+ * Desktop: Move → Click → Hold → Drag
+ * Mobile:  Touch → Hold → Drag (no Move — no cursor)
+ * @returns {string[]}
+ */
+export function getGestureStageOrder() {
+  return isCoarsePointer()
+    ? ['touch', 'hold', 'drag']
+    : ['move', 'click', 'hold', 'drag'];
+}
+
+/**
+ * Display labels for the gesture guide (uppercase in CSS).
+ * @returns {Record<string, string>}
+ */
+export function getGestureStageLabels() {
+  const s = EXPERIENCE.stages;
+  if (isCoarsePointer()) {
+    return { touch: s.touch, hold: s.hold, drag: s.drag };
+  }
+  return { move: s.move, click: s.click, hold: s.hold, drag: s.drag };
+}
+
+/**
  * Scale tutorial distances/times to the current viewport (phones / landscape).
  * @returns {{ moveDistance: number, moveMinMs: number, dragDistance: number, dragMinMs: number }}
  */
@@ -113,19 +159,17 @@ export function getExperienceThresholds() {
   const h = typeof window !== 'undefined' ? window.innerHeight : 800;
   const short = Math.min(w, h);
   const isCompact = short < 700 || h < 560;
-  const isTouch =
-    typeof window !== 'undefined' &&
-    window.matchMedia('(hover: none), (pointer: coarse)').matches;
+  const coarse = isCoarsePointer();
 
   const scale = isCompact ? Math.max(0.45, short / 900) : 1;
 
   return {
     moveDistance: Math.round(EXPERIENCE.moveDistance * scale),
-    moveMinMs: isTouch || isCompact
+    moveMinMs: coarse || isCompact
       ? Math.round(EXPERIENCE.moveMinMs * 0.55)
       : EXPERIENCE.moveMinMs,
     dragDistance: Math.round(EXPERIENCE.dragDistance * Math.max(0.55, scale)),
-    dragMinMs: isTouch || isCompact
+    dragMinMs: coarse || isCompact
       ? Math.round(EXPERIENCE.dragMinMs * 0.75)
       : EXPERIENCE.dragMinMs,
   };

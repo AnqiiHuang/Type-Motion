@@ -147,8 +147,8 @@
   transition: transform var(--duration-scroll) var(--ease-out-expo);
 }
 
-/* Sequential gesture guide — Move → Click → Hold → Drag */
-.mouse__steps {
+/* Single fixed instruction group — one slot, no layout shift */
+.mouse__guide {
   position: absolute;
   top: calc(var(--header-height) + var(--space-sm));
   left: 50%;
@@ -157,12 +157,24 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 0.55rem;
+  width: max-content;
+  max-width: min(92vw, 16rem);
+  min-height: 7.5rem;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.mouse__steps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 0.35rem;
   margin: 0;
   padding: 0;
   list-style: none;
-  pointer-events: none;
-  opacity: 0;
 }
 
 .mouse__step,
@@ -172,24 +184,53 @@
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--color-text-muted);
-  opacity: 0;
-  transform: translateY(6px);
+  opacity: 0.28;
+  transform: translateY(0);
+  transition:
+    opacity var(--duration-normal) var(--ease-out-expo),
+    color var(--duration-normal) var(--ease-out-expo),
+    transform var(--duration-normal) var(--ease-out-expo);
 }
 
 .mouse__step-arrow {
   letter-spacing: 0;
   font-size: 0.75rem;
   line-height: 1;
-  opacity: 0;
+  opacity: 0.18;
+}
+
+.mouse__step-arrow.is-passed {
+  opacity: 0.35;
 }
 
 .mouse__step.is-active {
   color: var(--color-text);
+  opacity: 0.95;
+  transform: translateY(0);
 }
 
 .mouse__step.is-done {
   color: var(--color-text-muted);
-  opacity: 0.35;
+  opacity: 0.28;
+}
+
+.mouse__step.is-pending {
+  color: var(--color-text-muted);
+  opacity: 0.28;
+}
+
+/* Secondary cue (Release) — reserved height, never shifts layout */
+.mouse__prompt {
+  margin: 0;
+  min-height: 1rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  opacity: 0;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .mouse__content {
@@ -203,39 +244,6 @@
   height: 100%;
   min-height: var(--section-min-height-svh);
   padding: var(--space-md);
-}
-
-.mouse__label {
-  position: absolute;
-  top: calc(var(--header-height) + var(--space-sm));
-  left: 50%;
-  translate: -50% 0;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  opacity: 0;
-  pointer-events: none;
-  white-space: nowrap;
-  z-index: 4;
-}
-
-/* Stage cue — centered above the word, installation-quiet */
-.mouse__label.is-stage {
-  top: auto;
-  bottom: calc(50% + clamp(3.5rem, 12vw, 7.5rem));
-  font-size: 0.75rem;
-  letter-spacing: 0.22em;
-  color: var(--color-text);
-}
-
-.mouse__label.is-feedback {
-  top: auto;
-  bottom: calc(50% + clamp(3.5rem, 12vw, 7.5rem));
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
-  color: var(--color-text);
 }
 
 .mouse__word {
@@ -400,8 +408,13 @@
     font-size: 0.625rem;
   }
 
-  .mouse__steps {
+  .mouse__guide {
     top: calc(var(--header-height) + 0.25rem);
+    min-height: 6.5rem;
+    gap: 0.4rem;
+  }
+
+  .mouse__steps {
     gap: 0.2rem;
   }
 
@@ -411,15 +424,9 @@
     letter-spacing: 0.16em;
   }
 
-  .mouse__label {
-    top: calc(var(--header-height) + 0.25rem);
-    font-size: 0.625rem;
+  .mouse__prompt {
+    font-size: 0.5625rem;
     letter-spacing: 0.14em;
-  }
-
-  .mouse__label.is-stage {
-    bottom: calc(50% + clamp(2.75rem, 18vw, 5rem));
-    font-size: 0.6875rem;
   }
 
   .mouse__progress {
@@ -444,13 +451,17 @@
 
 /* Short / landscape — collapse step guide to a compact row */
 @media (max-height: 560px) {
+  .mouse__guide {
+    min-height: 2.5rem;
+    top: calc(var(--header-height) + 0.15rem);
+  }
+
   .mouse__steps {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.25rem 0.45rem;
     max-width: 92vw;
-    top: calc(var(--header-height) + 0.15rem);
   }
 
   .mouse__step-arrow {
@@ -468,8 +479,9 @@
 }
 
 @media (max-height: 420px) and (orientation: landscape) {
-  .mouse__steps {
+  .mouse__guide {
     opacity: 0.85;
+    min-height: 2rem;
   }
 
   .mouse__step,
@@ -494,6 +506,10 @@
   .section--mouse[data-phase="complete"] .mouse__content,
   .section--mouse[data-phase="complete"] .mouse__ending {
     touch-action: pan-y;
+  }
+
+  .section--mouse[data-coarse="true"] .mouse__guide {
+    min-height: 5.75rem;
   }
 
   .mouse__letter {

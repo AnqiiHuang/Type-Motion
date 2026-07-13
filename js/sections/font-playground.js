@@ -1,13 +1,15 @@
 /**
  * Section 3 — Variable Font Playground
  *
- * Primary: hover near the sample → axes respond (weight / width / scale).
+ * Desktop: hover near the sample → axes respond (weight / width / scale).
+ * Mobile:  finger drag across type + optional subtle device tilt.
  * Secondary: sliders for precise control.
  */
 
-import { ANIMATION, EXPERIENCE } from '../config.js';
+import { ANIMATION, EXPERIENCE, isCoarsePointer } from '../config.js';
 import { prefersReducedMotion } from '../utils/animation.js';
 import { setCursor, resetCursor } from '../utils/cursor.js';
+import { createOrientationReader } from '../utils/orientation.js';
 import {
   setFeedbackLabel,
   markStageComplete,
@@ -50,6 +52,9 @@ const SLIDERS = {
   },
 };
 
+const HINT_DESKTOP = 'Drag across the type · Fine-tune with sliders';
+const HINT_MOBILE = 'Drag across the type · Fine-tune with sliders';
+
 /** @type {null | (() => void)} */
 let resetFontPlaygroundFn = null;
 
@@ -81,6 +86,7 @@ export function initFontPlayground(section) {
   const inputs = section.querySelectorAll('[data-playground-slider]');
   const valueEls = section.querySelectorAll('[data-playground-value]');
   const cue = section.querySelector('[data-section-cue]') || section.querySelector('.playground__eyebrow');
+  const hint = section.querySelector('[data-playground-hint]') || section.querySelector('.playground__hint');
 
   if (!sample || !inputs.length) return () => {};
 
@@ -93,11 +99,14 @@ export function initFontPlayground(section) {
   let lastX = 0;
   let lastY = 0;
   let sliderTouches = 0;
+  let dragging = false;
   const travelNeeded =
     Math.min(window.innerWidth, window.innerHeight) < 700 ? 90 : 180;
-  const isCoarse =
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(hover: none), (pointer: coarse)').matches;
+  const isCoarse = isCoarsePointer();
+
+  if (hint) {
+    hint.textContent = isCoarse ? HINT_MOBILE : HINT_DESKTOP;
+  }
 
   const state = {
     weight: SLIDERS.weight.default,
@@ -107,7 +116,12 @@ export function initFontPlayground(section) {
   };
 
   const proxy = { ...state };
-  const hoverBoost = { weight: 0, width: 0, scale: 1 };
+  const hoverBoost = { weight: 0, width: 0, scale: 1, x: 0, y: 0 };
+  const gyro = { x: 0, y: 0, rot: 0 };
+  const orientation = createOrientationReader();
+  /** Max gyro contribution — keep barely perceptible */
+  const GYRO_PX = 4;
+  const GYRO_ROT = 1.2;
 
   function applyVisuals() {
     const w = proxy.weight + hoverBoost.weight;
@@ -122,7 +136,9 @@ export function initFontPlayground(section) {
     sample.style.fontStretch = '100%';
     sample.style.letterSpacing = `${proxy.spacing}em`;
     gsap.set(sample, {
-      rotation: proxy.rotation,
+      x: hoverBoost.x + gyro.x,
+      y: hoverBoost.y + gyro.y,
+      rotation: proxy.rotation + gyro.rot,
       scaleX: hoverBoost.scale * (wd / 100),
       scaleY: hoverBoost.scale,
     });
@@ -184,53 +200,103 @@ export function initFontPlayground(section) {
     cleanups.push(() => input.removeEventListener('input', onInput));
   });
 
-  // ── Primary: hover response on sample ───────────────────────────────────
-  const onPreviewMove = (e) => {
+  /**
+   * Map pointer position relative to the sample into VF boosts.
+   * @param {number} clientX
+   * @param {number} clientY
+   * @param {{ follow?: boolean }} [opts]
+   */
+  function respondAt(clientX, clientY, opts = {}) {
     if (reducedMotion) return;
     const rect = sample.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
-    const dx = (e.clientX - cx) / (rect.width * 0.5);
-    const dy = (e.clientY - cy) / (rect.height * 0.5);
+    const dx = (clientX - cx) / (rect.width * 0.5);
+    const dy = (clientY - cy) / (rect.height * 0.5);
     const dist = Math.min(1, Math.hypot(dx, dy));
     const proximity = responseCurve(1 - dist);
 
     if (lastX || lastY) {
-      hoverTravel += Math.hypot(e.clientX - lastX, e.clientY - lastY);
+      hoverTravel += Math.hypot(clientX - lastX, clientY - lastY);
     }
-    lastX = e.clientX;
-    lastY = e.clientY;
+    lastX = clientX;
+    lastY = clientY;
 
+    const follow = Boolean(opts.follow);
     gsap.to(hoverBoost, {
       weight: proximity * 360,
       width: proximity * 36 * (dx >= 0 ? 1 : -1),
       scale: 1 + proximity * 0.12,
+      x: follow ? clamp(dx, -1, 1) * 10 * proximity : 0,
+      y: follow ? clamp(dy, -1, 1) * 8 * proximity : 0,
       duration: ANIMATION.duration.hover,
       ease: ANIMATION.ease.soft,
       overwrite: 'auto',
       onUpdate: applyVisuals,
     });
 
-    setCursor('hover');
-
     if (!completed && hoverTravel > travelNeeded && proximity > 0.2) {
       completeStage();
     }
-  };
+  }
 
-  const onPreviewLeave = () => {
+  function settleBoost() {
     lastX = 0;
     lastY = 0;
-    resetCursor();
     gsap.to(hoverBoost, {
       weight: 0,
       width: 0,
       scale: 1,
+      x: 0,
+      y: 0,
       duration: ANIMATION.duration.reset,
       ease: ANIMATION.ease.out,
       overwrite: 'auto',
       onUpdate: applyVisuals,
     });
+  }
+
+  // ── Desktop: hover response ─────────────────────────────────────────────
+  const onPreviewMove = (e) => {
+    if (isCoarse) return;
+    respondAt(e.clientX, e.clientY);
+    setCursor('hover');
+  };
+
+  const onPreviewLeave = () => {
+    if (isCoarse) return;
+    resetCursor();
+    settleBoost();
+  };
+
+  // ── Mobile: finger drag (no hover dependency) ───────────────────────────
+  const onPreviewDown = (e) => {
+    if (!isCoarse) return;
+    if (e.target.closest('.playground__slider, input, label')) return;
+    dragging = true;
+    orientation.request();
+    try {
+      preview?.setPointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    respondAt(e.clientX, e.clientY, { follow: true });
+  };
+
+  const onPreviewDrag = (e) => {
+    if (!isCoarse || !dragging) return;
+    respondAt(e.clientX, e.clientY, { follow: true });
+  };
+
+  const onPreviewUp = (e) => {
+    if (!isCoarse) return;
+    dragging = false;
+    try {
+      preview?.releasePointerCapture?.(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    settleBoost();
   };
 
   async function completeStage() {
@@ -245,12 +311,48 @@ export function initFontPlayground(section) {
   }
 
   if (preview) {
-    preview.addEventListener('pointermove', onPreviewMove, { passive: true });
-    preview.addEventListener('pointerleave', onPreviewLeave);
+    if (isCoarse) {
+      preview.addEventListener('pointerdown', onPreviewDown, { passive: true });
+      preview.addEventListener('pointermove', onPreviewDrag, { passive: true });
+      preview.addEventListener('pointerup', onPreviewUp, { passive: true });
+      preview.addEventListener('pointercancel', onPreviewUp, { passive: true });
+      cleanups.push(() => {
+        preview.removeEventListener('pointerdown', onPreviewDown);
+        preview.removeEventListener('pointermove', onPreviewDrag);
+        preview.removeEventListener('pointerup', onPreviewUp);
+        preview.removeEventListener('pointercancel', onPreviewUp);
+      });
+    } else {
+      preview.addEventListener('pointermove', onPreviewMove, { passive: true });
+      preview.addEventListener('pointerleave', onPreviewLeave);
+      cleanups.push(() => {
+        preview.removeEventListener('pointermove', onPreviewMove);
+        preview.removeEventListener('pointerleave', onPreviewLeave);
+      });
+    }
+  }
+
+  // Subtle gyro — only on coarse devices, fails closed
+  let gyroRaf = 0;
+  if (isCoarse && !reducedMotion) {
+    const tickGyro = () => {
+      const o = orientation.sample();
+      gyro.x = o.x * GYRO_PX;
+      gyro.y = o.y * GYRO_PX;
+      gyro.rot = o.x * GYRO_ROT;
+      applyVisuals();
+      gyroRaf = requestAnimationFrame(tickGyro);
+    };
+    // Start after first gesture requests permission; still tick at rest (zeros)
+    gyroRaf = requestAnimationFrame(tickGyro);
+    // Opportunistic enable (non-iOS often works without gesture)
+    orientation.request();
     cleanups.push(() => {
-      preview.removeEventListener('pointermove', onPreviewMove);
-      preview.removeEventListener('pointerleave', onPreviewLeave);
+      cancelAnimationFrame(gyroRaf);
+      orientation.destroy();
     });
+  } else {
+    cleanups.push(() => orientation.destroy());
   }
 
   // ── Entrance ────────────────────────────────────────────────────────────
@@ -292,6 +394,7 @@ export function initFontPlayground(section) {
     sliderTouches = 0;
     lastX = 0;
     lastY = 0;
+    dragging = false;
     Object.keys(SLIDERS).forEach((key) => {
       state[key] = SLIDERS[key].default;
       proxy[key] = SLIDERS[key].default;
@@ -305,6 +408,11 @@ export function initFontPlayground(section) {
     hoverBoost.weight = 0;
     hoverBoost.width = 0;
     hoverBoost.scale = 1;
+    hoverBoost.x = 0;
+    hoverBoost.y = 0;
+    gyro.x = 0;
+    gyro.y = 0;
+    gyro.rot = 0;
     gsap.killTweensOf(proxy);
     gsap.killTweensOf(hoverBoost);
     applyVisuals();
@@ -313,6 +421,9 @@ export function initFontPlayground(section) {
       cue.classList.add('is-stage');
       cue.classList.remove('is-feedback');
       gsap.set(cue, { clearProps: 'opacity,transform' });
+    }
+    if (hint) {
+      hint.textContent = isCoarse ? HINT_MOBILE : HINT_DESKTOP;
     }
   };
 
@@ -325,4 +436,13 @@ export function initFontPlayground(section) {
   });
 
   return () => cleanups.forEach((fn) => fn());
+}
+
+/**
+ * @param {number} v
+ * @param {number} min
+ * @param {number} max
+ */
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
 }

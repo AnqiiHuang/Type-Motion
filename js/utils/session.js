@@ -9,6 +9,12 @@ const OPENING_LINES = [
   'Follow the Gesture',
 ];
 
+const OPENING_LINES_TOUCH = [
+  'Touch the Type',
+  'Typography in Motion',
+  'Follow the Gesture',
+];
+
 const ENDING_LINES = [
   'Typography Never Stands Still.',
   'Every Movement Creates Meaning.',
@@ -37,6 +43,11 @@ function pick(list) {
  * Values stay within a narrow band so the feel remains coherent.
  */
 export function createSessionMotion() {
+  const coarse =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(hover: none), (pointer: coarse)').matches;
+
   return {
     /** Global tempo multiplier for springs / idle */
     tempo: range(0.88, 1.14),
@@ -68,7 +79,7 @@ export function createSessionMotion() {
     /** Velocity stretch scale */
     velStretch: range(0.85, 1.2),
     /** Opening / ending copy */
-    openingLine: pick(OPENING_LINES),
+    openingLine: pick(coarse ? OPENING_LINES_TOUCH : OPENING_LINES),
     endingLine: pick(ENDING_LINES),
     endingCta: 'Replay',
   };

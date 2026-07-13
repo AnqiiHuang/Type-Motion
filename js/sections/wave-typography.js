@@ -5,7 +5,7 @@
  * reconnect. Secondary: hover intensifies, click calms.
  */
 
-import { ANIMATION, EXPERIENCE } from '../config.js';
+import { ANIMATION, EXPERIENCE, isCoarsePointer } from '../config.js';
 import { prefersReducedMotion } from '../utils/animation.js';
 import { SESSION } from '../utils/session.js';
 import { setCursor, resetCursor } from '../utils/cursor.js';
@@ -104,8 +104,12 @@ export function initWaveTypography(section) {
   let startX = 0;
   let startY = 0;
 
+  const waveHint = isCoarsePointer()
+    ? 'Drag to pull the current · Touch to calm'
+    : 'Drag to pull the current · Click to calm';
+
   if (label) {
-    label.textContent = 'Drag to pull the current · Click to calm';
+    label.textContent = waveHint;
   }
 
   gsap.set(letters, { opacity: 0, y: 28 });
@@ -211,7 +215,7 @@ export function initWaveTypography(section) {
     if (label) {
       await setFeedbackLabel(label, EXPERIENCE.feedback.nice, { stage: false });
       await wait(EXPERIENCE.feedbackHoldMs);
-      await setFeedbackLabel(label, 'Drag to pull the current · Click to calm', {
+      await setFeedbackLabel(label, waveHint, {
         stage: true,
       });
     }

@@ -3,7 +3,7 @@
  * Uses ScrollTrigger so pin spacers (hero / tutorial) stay in sync.
  */
 
-import { ANIMATION } from '../config.js';
+import { ANIMATION, isCoarsePointer } from '../config.js';
 import { prefersReducedMotion } from './animation.js';
 
 /**
@@ -17,20 +17,6 @@ function sectionScrollTop(section) {
   const el =
     parent?.classList.contains('pin-spacer') ? parent : section;
   return el.offsetTop;
-}
-
-/**
- * Touch / coarse pointers: inertia overshoots and lands between panels.
- * @returns {boolean}
- */
-function isCoarsePointer() {
-  if (typeof ScrollTrigger !== 'undefined' && ScrollTrigger.isTouch === 1) {
-    return true;
-  }
-  return (
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(hover: none), (pointer: coarse)').matches
-  );
 }
 
 /**

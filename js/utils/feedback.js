@@ -7,6 +7,7 @@ import { ANIMATION, EXPERIENCE } from '../config.js';
 
 /**
  * Crossfade a label element to new copy.
+ * Opacity + slight translateY with ease-in-out — no layout shift.
  * @param {HTMLElement | null} el
  * @param {string} text
  * @param {{ stage?: boolean, duration?: number }} [opts]
@@ -20,9 +21,9 @@ export function setFeedbackLabel(el, text, opts = {}) {
     gsap.killTweensOf(el);
     gsap.to(el, {
       opacity: 0,
-      y: -4,
+      y: -3,
       duration,
-      ease: ANIMATION.ease.soft,
+      ease: ANIMATION.ease.smooth,
       onComplete: () => {
         el.textContent = text;
         el.classList.toggle('is-stage', Boolean(text) && stage);
@@ -33,12 +34,12 @@ export function setFeedbackLabel(el, text, opts = {}) {
         }
         gsap.fromTo(
           el,
-          { opacity: 0, y: 6 },
+          { opacity: 0, y: 4 },
           {
-            opacity: stage ? 0.92 : 0.88,
+            opacity: stage ? 0.92 : 0.72,
             y: 0,
             duration: ANIMATION.duration.click,
-            ease: ANIMATION.ease.out,
+            ease: ANIMATION.ease.smooth,
             onComplete: resolve,
           }
         );

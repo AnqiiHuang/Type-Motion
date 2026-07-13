@@ -6,7 +6,7 @@
  * Export via Canvas → PNG.
  */
 
-import { ANIMATION, EXPERIENCE } from '../config.js';
+import { ANIMATION, EXPERIENCE, isCoarsePointer } from '../config.js';
 import { prefersReducedMotion } from '../utils/animation.js';
 import { setCursor, resetCursor } from '../utils/cursor.js';
 import {
@@ -945,8 +945,12 @@ export function initPosterGenerator(section) {
   let completed = false;
   let redrawTimer = null;
 
+  const posterHint = isCoarsePointer()
+    ? 'Touch the poster to edit · Type to set the title'
+    : 'Click the poster to edit · Type to set the title';
+
   if (label) {
-    label.textContent = 'Click the poster to edit · Type to set the title';
+    label.textContent = posterHint;
   }
 
   function stopCaretBlink() {
@@ -1062,7 +1066,7 @@ export function initPosterGenerator(section) {
     if (label) {
       await setFeedbackLabel(label, EXPERIENCE.feedback.unlocked, { stage: false });
       await wait(EXPERIENCE.feedbackHoldMs);
-      await setFeedbackLabel(label, 'Click the poster to edit · Type to set the title', {
+      await setFeedbackLabel(label, posterHint, {
         stage: true,
       });
     }
