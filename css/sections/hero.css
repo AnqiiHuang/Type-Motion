@@ -71,7 +71,7 @@
 
 .hero__word {
   display: inline-block;
-  will-change: transform;
+  will-change: transform, opacity;
 }
 
 /* Responsive adjustments */

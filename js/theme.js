@@ -2,6 +2,7 @@
  * Global theme manager
  *
  * Themes sync via <html data-theme="..."> and CSS custom properties.
+ * Each page load picks one of the five themes at random.
  */
 
 export const THEMES = [
@@ -33,6 +34,7 @@ export const THEMES = [
 ];
 
 const STORAGE_KEY = 'type-motion-theme';
+const LAST_KEY = 'type-motion-theme-last';
 const DEFAULT_THEME = 'minimal';
 
 /**
@@ -40,6 +42,23 @@ const DEFAULT_THEME = 'minimal';
  */
 export function getTheme() {
   return document.documentElement.getAttribute('data-theme') || DEFAULT_THEME;
+}
+
+/**
+ * Pick a random theme id, preferring not to repeat the last visit.
+ * @returns {string}
+ */
+export function pickRandomTheme() {
+  let lastId = null;
+  try {
+    lastId = sessionStorage.getItem(LAST_KEY);
+  } catch {
+    // ignore
+  }
+
+  const pool = THEMES.filter((t) => t.id !== lastId);
+  const list = pool.length ? pool : THEMES;
+  return list[Math.floor(Math.random() * list.length)].id;
 }
 
 /**
@@ -59,7 +78,7 @@ export function setTheme(themeId, options = {}) {
   }
 
   const apply = () => {
-    // Clear session palette overrides so theme tokens win
+    // Clear any leftover inline overrides so theme CSS tokens win
     [
       '--color-bg',
       '--color-bg-alt',
@@ -75,10 +94,12 @@ export function setTheme(themeId, options = {}) {
       '--trail-rgb',
     ].forEach((prop) => root.style.removeProperty(prop));
     delete root.dataset.palette;
+    root.style.removeProperty('color-scheme');
 
     root.setAttribute('data-theme', theme.id);
     try {
       localStorage.setItem(STORAGE_KEY, theme.id);
+      sessionStorage.setItem(LAST_KEY, theme.id);
     } catch {
       // private mode / blocked storage
     }
@@ -146,21 +167,11 @@ function syncControls(themeId) {
 }
 
 /**
- * Restore saved theme (or default) on boot
+ * Boot theme system — random theme from the five on every load
  */
 export function initThemeSystem() {
-  let saved = DEFAULT_THEME;
-  try {
-    saved = localStorage.getItem(STORAGE_KEY) || DEFAULT_THEME;
-  } catch {
-    saved = DEFAULT_THEME;
-  }
-
-  if (!THEMES.some((t) => t.id === saved)) {
-    saved = DEFAULT_THEME;
-  }
-
-  setTheme(saved, { animate: false });
+  const initial = pickRandomTheme();
+  setTheme(initial, { animate: false });
 
   // Header + section buttons (event delegation)
   const onClick = (e) => {

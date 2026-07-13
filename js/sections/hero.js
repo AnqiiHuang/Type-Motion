@@ -1,7 +1,7 @@
 /**
  * Section 1 — Landing Hero
  *
- * Concept opening → TYPE entrance → parallax → scroll exit
+ * Concept opening → TYPE entrance → parallax → scroll fade (TYPE out, gradient in)
  */
 
 import { ANIMATION } from '../config.js';
@@ -101,13 +101,15 @@ export function initHero(section) {
   }
 
   // ── Scroll transition ───────────────────────────────────────────────────
+  // fromTo with explicit values — do NOT use .to() here: entrance sets
+  // opacity to 0 first, so a .to() would bake start=0 and snap invisible on scroll.
   const scrollTl = gsap.timeline({
     scrollTrigger: {
       trigger: section,
       start: 'top top',
-      end: '+=120%',
+      end: '+=180%',
       pin: true,
-      scrub: 1.2,
+      scrub: 1.4,
       anticipatePin: 1,
       onLeave: () => {
         scrollHint?.classList.remove('is-visible');
@@ -119,31 +121,25 @@ export function initHero(section) {
   });
 
   scrollTl
-    .to(
+    .fromTo(
       word,
+      { opacity: 1 },
       {
-        scale: 0.35,
-        opacity: 0.15,
+        opacity: 0,
         duration: 1,
-        ease: ANIMATION.ease.inOut,
+        ease: 'none',
+        immediateRender: false,
       },
       0
     )
-    .to(
+    .fromTo(
       bg,
+      { opacity: 0 },
       {
         opacity: 1,
         duration: 1,
-        ease: ANIMATION.ease.inOut,
-      },
-      0
-    )
-    .to(
-      word,
-      {
-        y: -60,
-        duration: 1,
-        ease: ANIMATION.ease.inOut,
+        ease: 'none',
+        immediateRender: false,
       },
       0
     );

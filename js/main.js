@@ -7,7 +7,6 @@
 
 import { registerGSAPPlugins, lazyInitSection } from './utils/animation.js';
 import { initThemeSystem } from './theme.js';
-import { initPalette } from './utils/palette.js';
 import { initAudio } from './utils/audio.js';
 import { initPointer } from './utils/pointer.js';
 import { initTrail } from './utils/trail.js';
@@ -35,11 +34,15 @@ const SECTIONS = [
 function init() {
   registerGSAPPlugins();
 
-  // Theme tokens first; session palette tints colors on every refresh.
-  // Choosing a theme later clears the palette overrides.
+  // Always start at the top on refresh / revisit so hero entrance can replay
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+  window.scrollTo(0, 0);
+
+  // Random theme from the five on every load; header bolds the active one
   const cleanups = [
     initThemeSystem(),
-    initPalette().cleanup,
     initPointer(),
     initTrail(),
     initAudio(),
@@ -57,8 +60,11 @@ function init() {
     }
   });
 
-  // Refresh ScrollTrigger after fonts load
-  document.fonts.ready.then(() => ScrollTrigger.refresh());
+  // Refresh ScrollTrigger after fonts load; keep scroll pinned at top
+  document.fonts.ready.then(() => {
+    window.scrollTo(0, 0);
+    ScrollTrigger.refresh();
+  });
 
   return () => cleanups.forEach((fn) => fn && fn());
 }
