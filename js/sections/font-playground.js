@@ -21,15 +21,15 @@ const SLIDERS = {
   weight: {
     key: 'weight',
     min: 100,
-    max: 900,
+    max: 500,
     step: 1,
     default: 400,
     format: (v) => String(Math.round(v)),
   },
   width: {
     key: 'width',
-    min: 50,
-    max: 150,
+    min: 25,
+    max: 151,
     step: 1,
     default: 100,
     format: (v) => String(Math.round(v)),
@@ -125,22 +125,24 @@ export function initFontPlayground(section) {
   const GYRO_ROT = 1.2;
 
   function applyVisuals() {
-    const w = proxy.weight + hoverBoost.weight;
-    const wd = proxy.width + hoverBoost.width;
-    // Weight uses the real VF axis via font-weight.
-    // Width uses scaleX — font-stretch/`wdth` is unreliable here once
-    // font-weight is applied, so geometric scale keeps the control honest.
+    const w = clamp(proxy.weight + hoverBoost.weight, SLIDERS.weight.min, SLIDERS.weight.max);
+    const wd = clamp(proxy.width + hoverBoost.width, SLIDERS.width.min, SLIDERS.width.max);
+    const weight = Math.round(w);
+    const width = Math.round(wd);
+    // Drive Roboto Flex axes directly. Using font-weight alone snaps to a
+    // handful of named instances (looks like ~3 weights); `wght` stays continuous.
+    // Keep `opsz` + `wdth` in the same declaration so axes don't reset.
     sample.style.fontFamily = "'Roboto Flex', sans-serif";
-    sample.style.fontVariationSettings = 'normal';
     sample.style.fontOpticalSizing = 'none';
-    sample.style.fontWeight = String(Math.round(w));
-    sample.style.fontStretch = '100%';
+    sample.style.fontVariationSettings = `'wght' ${weight}, 'wdth' ${width}, 'opsz' 144`;
+    sample.style.fontWeight = String(weight);
+    sample.style.fontStretch = `${width}%`;
     sample.style.letterSpacing = `${proxy.spacing}em`;
     gsap.set(sample, {
       x: hoverBoost.x + gyro.x,
       y: hoverBoost.y + gyro.y,
       rotation: proxy.rotation + gyro.rot,
-      scaleX: hoverBoost.scale * (wd / 100),
+      scaleX: hoverBoost.scale,
       scaleY: hoverBoost.scale,
     });
   }
@@ -225,7 +227,7 @@ export function initFontPlayground(section) {
 
     const follow = Boolean(opts.follow);
     gsap.to(hoverBoost, {
-      weight: proximity * 360,
+      weight: proximity * 100,
       width: proximity * 36 * (dx >= 0 ? 1 : -1),
       scale: 1 + proximity * 0.12,
       x: follow ? clamp(dx, -1, 1) * 10 * proximity : 0,

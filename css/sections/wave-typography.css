@@ -21,13 +21,15 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  /* Header on top + Scroll cue below — match physics/poster label stack */
+  min-height: var(--section-min-height-svh);
+  /* Same stack as physics: label above a tall stage */
   padding: calc(var(--header-height) + var(--space-sm)) var(--space-md) calc(var(--space-md) + var(--scroll-cue-space));
-  gap: clamp(1.75rem, 4.5svh, 3rem);
+  gap: var(--space-md);
   box-sizing: border-box;
 }
 
 .wave__label {
+  flex: 0 0 auto;
   position: relative;
   z-index: 3;
   margin: 0;
@@ -40,16 +42,20 @@
   color: var(--color-text-muted);
   opacity: 0;
   pointer-events: none;
-  flex: 0 0 auto;
 }
 
 .wave__word {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   column-gap: 0.02em;
   row-gap: 0.15em;
+  width: min(920px, 100%);
+  /* Match physics stage height so the label sits in the upper band */
+  min-height: clamp(280px, 52svh, 480px);
   max-width: 100%;
   margin: 0;
   font-family: var(--font-display);
@@ -76,13 +82,13 @@
 @media (max-width: 768px) {
   .wave__content {
     padding: calc(var(--header-height) + var(--space-sm)) var(--section-pad-x) calc(var(--space-sm) + var(--scroll-cue-space));
-    gap: clamp(1.35rem, 3.5svh, 2.25rem);
     box-sizing: border-box;
   }
 
   .wave__word {
     font-size: clamp(1.85rem, 9.5vw, 4rem);
     letter-spacing: -0.02em;
+    min-height: clamp(220px, 42svh, 360px);
     max-width: 100%;
     box-sizing: border-box;
   }
@@ -98,6 +104,7 @@
 @media (max-width: 480px) {
   .wave__word {
     font-size: clamp(1.5rem, 8.5vw, 2.75rem);
+    min-height: clamp(180px, 38svh, 280px);
   }
 
   .wave__space {
@@ -118,5 +125,6 @@
 
   .wave__word {
     font-size: clamp(1.5rem, 7vw, 3rem);
+    min-height: clamp(120px, 48svh, 220px);
   }
 }

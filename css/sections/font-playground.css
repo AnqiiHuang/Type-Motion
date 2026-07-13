@@ -89,9 +89,9 @@
   text-align: center;
   user-select: none;
   transform-origin: center center;
-  will-change: transform, font-weight, letter-spacing;
+  will-change: transform, font-variation-settings, letter-spacing;
   font-optical-sizing: none;
-  font-variation-settings: normal;
+  font-variation-settings: 'wght' 400, 'wdth' 100, 'opsz' 144;
 }
 
 /* ── Sliders ───────────────────────────────────────────────────────────── */
