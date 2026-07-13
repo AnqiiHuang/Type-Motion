@@ -19,7 +19,7 @@ export function initHero(section) {
   const bg = section.querySelector('.hero__bg');
   const scrollHint = document.querySelector('.scroll-hint');
   const headerLabel = document.querySelector('.site-header__label');
-  const headerThemes = document.querySelector('.site-header__themes');
+  const headerActions = document.querySelector('.site-header__actions');
 
   if (!word) return () => {};
 
@@ -41,15 +41,15 @@ export function initHero(section) {
   entranceTl.call(() => {
     scrollHint?.classList.add('is-visible');
     headerLabel?.classList.add('is-visible');
-    headerThemes?.classList.add('is-visible');
+    headerActions?.classList.add('is-visible');
   }, null, '-=0.4');
 
   // ── Mouse parallax ──────────────────────────────────────────────────────
   if (!reducedMotion) {
     const { strength, duration } = ANIMATION.parallax;
 
-    const xTo = gsap.quickTo(word, 'x', { duration, ease: ANIMATION.ease.out });
-    const yTo = gsap.quickTo(word, 'y', { duration, ease: ANIMATION.ease.out });
+    const xTo = gsap.quickTo(word, 'x', { duration, ease: ANIMATION.ease.soft });
+    const yTo = gsap.quickTo(word, 'y', { duration, ease: ANIMATION.ease.soft });
 
     const onMouseMove = (e) => {
       const centerX = window.innerWidth / 2;

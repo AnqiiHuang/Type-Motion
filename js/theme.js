@@ -59,6 +59,23 @@ export function setTheme(themeId, options = {}) {
   }
 
   const apply = () => {
+    // Clear session palette overrides so theme tokens win
+    [
+      '--color-bg',
+      '--color-bg-alt',
+      '--color-text',
+      '--color-text-muted',
+      '--color-accent',
+      '--color-surface',
+      '--color-border',
+      '--hero-grad-1',
+      '--hero-grad-2',
+      '--hero-grad-3',
+      '--hero-grad-4',
+      '--trail-rgb',
+    ].forEach((prop) => root.style.removeProperty(prop));
+    delete root.dataset.palette;
+
     root.setAttribute('data-theme', theme.id);
     try {
       localStorage.setItem(STORAGE_KEY, theme.id);

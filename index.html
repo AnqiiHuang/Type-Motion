@@ -29,14 +29,17 @@
   <!-- Fixed UI chrome -->
   <header class="site-header">
     <span class="site-header__label">Type Motion</span>
-    <nav class="site-header__themes" aria-label="Theme">
-      <span class="site-header__themes-label">Theme</span>
-      <button type="button" class="site-header__theme-btn" data-theme-option="minimal" aria-pressed="true">Minimal</button>
-      <button type="button" class="site-header__theme-btn" data-theme-option="brutalism" aria-pressed="false">Brutalism</button>
-      <button type="button" class="site-header__theme-btn" data-theme-option="cyber" aria-pressed="false">Cyber</button>
-      <button type="button" class="site-header__theme-btn" data-theme-option="luxury" aria-pressed="false">Luxury</button>
-      <button type="button" class="site-header__theme-btn" data-theme-option="editorial" aria-pressed="false">Editorial</button>
-    </nav>
+    <div class="site-header__actions">
+      <button type="button" class="site-header__mute" data-mute-toggle aria-pressed="false" aria-label="Toggle sound">Mute</button>
+      <nav class="site-header__themes" aria-label="Theme">
+        <span class="site-header__themes-label">Theme</span>
+        <button type="button" class="site-header__theme-btn" data-theme-option="minimal" aria-pressed="true">Minimal</button>
+        <button type="button" class="site-header__theme-btn" data-theme-option="brutalism" aria-pressed="false">Brutalism</button>
+        <button type="button" class="site-header__theme-btn" data-theme-option="cyber" aria-pressed="false">Cyber</button>
+        <button type="button" class="site-header__theme-btn" data-theme-option="luxury" aria-pressed="false">Luxury</button>
+        <button type="button" class="site-header__theme-btn" data-theme-option="editorial" aria-pressed="false">Editorial</button>
+      </nav>
+    </div>
   </header>
 
   <div class="scroll-hint" aria-hidden="true">
@@ -61,16 +64,22 @@
       </div>
     </section>
 
-    <!-- Section 2: Mouse Interaction -->
+    <!-- Section 2: Interactive Typography Experience -->
     <section
       id="mouse-interaction"
       class="section section--mouse"
       data-section="mouse-interaction"
-      aria-label="Mouse Interaction"
+      aria-label="Interactive Typography"
     >
+      <div class="mouse__energy" aria-hidden="true"></div>
       <div class="mouse__content">
-        <p class="mouse__label">Move closer</p>
+        <p class="mouse__label">Move</p>
         <h2 class="mouse__word" data-mouse-word aria-label="Design">DESIGN</h2>
+
+        <div class="mouse__ending" data-mouse-ending aria-hidden="true">
+          <p class="mouse__ending-title" data-ending-title>Thank You</p>
+          <button type="button" class="mouse__replay" data-mouse-replay>Explore Again</button>
+        </div>
       </div>
     </section>
 

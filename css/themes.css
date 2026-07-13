@@ -29,6 +29,7 @@
   --hero-grad-2: #f5f5f5;
   --hero-grad-3: #ebebeb;
   --hero-grad-4: #e0e0e0;
+  --trail-rgb: 10, 10, 10;
 }
 
 /* Brutalism — raw, heavy, confrontational */
@@ -57,6 +58,7 @@
   --hero-grad-2: #e8e4d8;
   --hero-grad-3: #ddd7c8;
   --hero-grad-4: #000000;
+  --trail-rgb: 0, 0, 0;
 }
 
 /* Cyber — dark, precise, signal green */
@@ -85,6 +87,7 @@
   --hero-grad-2: #0a140e;
   --hero-grad-3: #102018;
   --hero-grad-4: #163024;
+  --trail-rgb: 88, 255, 140;
 }
 
 /* Luxury — deep charcoal, quiet gold */
@@ -113,6 +116,7 @@
   --hero-grad-2: #1a1714;
   --hero-grad-3: #221e1a;
   --hero-grad-4: #2a241e;
+  --trail-rgb: 212, 175, 55;
 }
 
 /* Editorial — clean print, serif hierarchy */
@@ -141,6 +145,7 @@
   --hero-grad-2: #f3f2ed;
   --hero-grad-3: #eae8e1;
   --hero-grad-4: #dfddd4;
+  --trail-rgb: 18, 18, 18;
 }
 
 /* Smooth global theme transitions */

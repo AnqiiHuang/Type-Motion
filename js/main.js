@@ -1,12 +1,16 @@
 /**
  * Type Motion — Main Entry
  *
- * Orchestrates section initialization.
+ * Orchestrates global systems + section initialization.
  * Each section is lazy-loaded when it enters the viewport.
  */
 
 import { registerGSAPPlugins, lazyInitSection } from './utils/animation.js';
 import { initThemeSystem } from './theme.js';
+import { initPalette } from './utils/palette.js';
+import { initAudio } from './utils/audio.js';
+import { initPointer } from './utils/pointer.js';
+import { initTrail } from './utils/trail.js';
 import { initHero } from './sections/hero.js';
 import { initMouseInteraction } from './sections/mouse-interaction.js';
 import { initFontPlayground } from './sections/font-playground.js';
@@ -19,7 +23,7 @@ import { initAbout } from './sections/about.js';
 /** Section registry — add new sections here as they are built */
 const SECTIONS = [
   { selector: '#hero', init: initHero, eager: true },
-  { selector: '#mouse-interaction', init: initMouseInteraction },
+  { selector: '#mouse-interaction', init: initMouseInteraction, eager: true },
   { selector: '#font-playground', init: initFontPlayground },
   { selector: '#wave-typography', init: initWaveTypography },
   { selector: '#typography-physics', init: initTypographyPhysics },
@@ -30,24 +34,33 @@ const SECTIONS = [
 
 function init() {
   registerGSAPPlugins();
-  const cleanups = [initThemeSystem()];
 
-  SECTIONS.forEach(({ selector, init, eager }) => {
+  // Theme tokens first; session palette tints colors on every refresh.
+  // Choosing a theme later clears the palette overrides.
+  const cleanups = [
+    initThemeSystem(),
+    initPalette().cleanup,
+    initPointer(),
+    initTrail(),
+    initAudio(),
+  ];
+
+  SECTIONS.forEach(({ selector, init: initSection, eager }) => {
     if (eager) {
       const el = document.querySelector(selector);
       if (el) {
-        const cleanup = init(el);
+        const cleanup = initSection(el);
         if (cleanup) cleanups.push(cleanup);
       }
     } else {
-      cleanups.push(lazyInitSection(selector, init));
+      cleanups.push(lazyInitSection(selector, initSection));
     }
   });
 
   // Refresh ScrollTrigger after fonts load
   document.fonts.ready.then(() => ScrollTrigger.refresh());
 
-  return () => cleanups.forEach((fn) => fn());
+  return () => cleanups.forEach((fn) => fn && fn());
 }
 
 // Boot
