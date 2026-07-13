@@ -160,10 +160,11 @@
 @media (max-width: 768px) {
   .about__content {
     padding-top: calc(var(--header-height) + var(--space-md));
-    padding-left: var(--space-sm);
-    padding-right: var(--space-sm);
+    padding-left: var(--section-pad-x);
+    padding-right: var(--section-pad-x);
     padding-bottom: var(--space-lg);
     gap: var(--space-sm);
+    box-sizing: border-box;
   }
 
   .about__body {

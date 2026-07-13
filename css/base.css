@@ -61,6 +61,10 @@
   --section-min-height-svh: 100svh;
   --section-pad-x: var(--space-md);
   --section-pad-x-sm: var(--space-sm);
+  /* Fixed left progress nav (01–06) — reserved on small screens */
+  --progress-rail: 0px;
+  /* Bottom clearance so section content clears the Scroll cue */
+  --scroll-cue-space: 4.75rem;
 
   /* Breakpoints (documentation tokens — use matching media queries) */
   --bp-xs: 380px;
@@ -76,9 +80,20 @@
   }
 }
 
+/* Reserve space for the fixed 01–06 rail; keep content centered */
+@media (max-width: 768px) {
+  :root {
+    --progress-rail: 2.75rem;
+    --section-pad-x: var(--progress-rail);
+    --section-pad-x-sm: var(--progress-rail);
+  }
+}
+
 @media (max-width: 480px) {
   :root {
-    --section-pad-x: var(--space-sm);
+    --progress-rail: 2.5rem;
+    --section-pad-x: var(--progress-rail);
+    --section-pad-x-sm: var(--progress-rail);
   }
 }
 

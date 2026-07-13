@@ -182,8 +182,7 @@
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
     gap: clamp(1.5rem, 5svh, 4rem);
-    padding-top: calc(var(--header-height) + 0.75rem);
-    padding-bottom: 1.75rem;
+    padding: calc(var(--header-height) + 0.75rem) var(--section-pad-x) 1.75rem;
     align-content: start;
     justify-items: center;
     overflow-x: hidden;
@@ -196,7 +195,7 @@
     min-height: 0;
     padding: 0;
     max-height: min(22svh, 200px);
-    width: 100%;
+    width: min(100%, 22rem);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -207,15 +206,17 @@
   }
 
   .playground__controls {
-    max-width: 420px;
+    max-width: min(22rem, 100%);
     margin: 0 auto;
     width: 100%;
     gap: 0.65rem;
+    text-align: center;
   }
 
   .playground__sliders {
     gap: 1.1rem;
     margin-top: 0.4rem;
+    text-align: left;
   }
 
   .playground__slider {
@@ -225,8 +226,8 @@
 
 @media (max-width: 480px) {
   .playground__layout {
-    padding-left: var(--space-sm);
-    padding-right: var(--space-sm);
+    padding-left: var(--section-pad-x);
+    padding-right: var(--section-pad-x);
     padding-top: calc(var(--header-height) + 0.5rem);
     padding-bottom: 1.5rem;
     gap: clamp(1.25rem, 4svh, 3rem);
@@ -242,6 +243,10 @@
 
   .playground__heading {
     font-size: 1.15rem;
+  }
+
+  .playground__controls {
+    max-width: min(18.5rem, 100%);
   }
 
   .playground__sliders {
@@ -296,7 +301,7 @@
     grid-template-columns: minmax(200px, 280px) 1fr;
     grid-template-rows: 1fr;
     gap: var(--space-sm);
-    padding: calc(var(--header-height) + 0.25rem) var(--space-sm) 0.75rem;
+    padding: calc(var(--header-height) + 0.25rem) var(--section-pad-x) 0.75rem;
     align-content: stretch;
   }
 
@@ -307,6 +312,11 @@
 
   .playground__sample {
     font-size: clamp(2rem, 10vw, 3.5rem);
+  }
+
+  .playground__controls {
+    text-align: left;
+    max-width: none;
   }
 
   .playground__hint,

@@ -17,7 +17,7 @@
   min-height: var(--section-min-height-svh);
   max-height: var(--section-min-height-svh);
   /* Extra bottom room so actions clear the section Scroll cue */
-  padding: calc(var(--header-height) + 0.5rem) var(--space-md) calc(var(--space-md) + 4.75rem);
+  padding: calc(var(--header-height) + 0.5rem) var(--space-md) calc(var(--space-md) + var(--scroll-cue-space));
   gap: var(--space-sm);
   overflow: hidden;
 }
@@ -89,40 +89,55 @@
 
 @media (max-width: 768px) {
   .poster__content {
-    padding-left: var(--space-sm);
-    padding-right: var(--space-sm);
+    padding-left: var(--section-pad-x);
+    padding-right: var(--section-pad-x);
+    box-sizing: border-box;
   }
 
   .poster__label {
+    max-width: min(22rem, 100%);
     font-size: 0.625rem;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
+    line-height: 1.45;
   }
 
   .poster__frame {
-    width: max(150px, min(320px, 70vw, calc((100svh - var(--header-height) - 13rem) * 0.75)));
+    width: max(
+      150px,
+      min(280px, calc(100vw - (var(--section-pad-x) * 2) - 0.5rem), calc((100svh - var(--header-height) - 13rem) * 0.75))
+    );
+  }
+
+  .poster__actions {
+    width: min(100%, 280px);
+    max-width: 100%;
+  }
+
+  .poster__actions .btn {
+    flex: 1 1 0;
+    min-width: 0;
   }
 }
 
 @media (max-width: 480px) {
   .poster__content {
-    padding-bottom: calc(var(--space-sm) + 4.5rem);
+    padding-bottom: calc(var(--space-sm) + var(--scroll-cue-space));
     gap: 0.65rem;
     /* Prefer top-weighted layout so snap doesn't leave a huge empty band */
     justify-content: flex-start;
+    align-items: center;
     padding-top: calc(var(--header-height) + 0.75rem);
   }
 
   .poster__frame {
-    width: max(140px, min(280px, 78vw, calc((100svh - var(--header-height) - 13.5rem) * 0.75)));
+    width: max(
+      140px,
+      min(240px, calc(100vw - (var(--section-pad-x) * 2) - 0.5rem), calc((100svh - var(--header-height) - 13.5rem) * 0.75))
+    );
   }
 
   .poster__actions {
-    width: 100%;
-  }
-
-  .poster__actions .btn {
-    flex: 1 1 auto;
-    min-width: 0;
+    width: min(100%, 240px);
   }
 }
 
@@ -131,11 +146,16 @@
   .poster__content {
     padding-top: calc(var(--header-height) + 0.25rem);
     padding-bottom: calc(var(--space-sm) + 3.25rem);
+    padding-left: var(--section-pad-x);
+    padding-right: var(--section-pad-x);
     gap: 0.5rem;
   }
 
   .poster__frame {
-    width: max(120px, min(220px, 42vw, calc((100svh - var(--header-height) - 8.5rem) * 0.75)));
+    width: max(
+      120px,
+      min(220px, calc(100vw - (var(--section-pad-x) * 2) - 0.5rem), calc((100svh - var(--header-height) - 8.5rem) * 0.75))
+    );
   }
 
   .poster__label {
@@ -145,6 +165,7 @@
 
   .poster__actions {
     gap: 0.5rem;
+    width: min(100%, 220px);
   }
 
   .poster__actions .btn {

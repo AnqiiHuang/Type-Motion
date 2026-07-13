@@ -134,7 +134,8 @@
 .mouse__progress {
   position: absolute;
   left: 50%;
-  bottom: 12%;
+  /* Sit above the fixed Scroll cue so the line never strikes through it */
+  bottom: calc(var(--space-md) + var(--scroll-cue-space));
   width: min(10rem, 36vw);
   height: 1px;
   background: var(--color-text);
@@ -144,7 +145,14 @@
   pointer-events: none;
   z-index: 3;
   will-change: transform;
-  transition: transform var(--duration-scroll) var(--ease-out-expo);
+  transition:
+    transform var(--duration-scroll) var(--ease-out-expo),
+    opacity var(--duration-normal) var(--ease-out-expo);
+}
+
+/* Journey done — drop the progress whisper before the Scroll cue appears */
+.section--mouse[data-phase="complete"] .mouse__progress {
+  opacity: 0;
 }
 
 /* Single fixed instruction group — one slot, no layout shift */
@@ -430,7 +438,7 @@
   }
 
   .mouse__progress {
-    bottom: 18%;
+    bottom: calc(var(--space-sm) + var(--scroll-cue-space));
   }
 
   .mouse__ending-title {
@@ -474,7 +482,7 @@
   }
 
   .mouse__progress {
-    bottom: 10%;
+    bottom: calc(0.5rem + var(--scroll-cue-space));
   }
 }
 

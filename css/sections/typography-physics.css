@@ -17,8 +17,10 @@
   width: 100%;
   height: 100%;
   min-height: var(--section-min-height-svh);
-  padding: calc(var(--header-height) + var(--space-sm)) var(--space-md) var(--space-lg);
+  /* Extra bottom room so Drop clears the section Scroll cue */
+  padding: calc(var(--header-height) + var(--space-sm)) var(--space-md) calc(var(--space-md) + var(--scroll-cue-space));
   gap: var(--space-md);
+  box-sizing: border-box;
 }
 
 .physics__label {
@@ -78,23 +80,26 @@
 
 @media (max-width: 768px) {
   .physics__content {
-    padding-left: var(--space-sm);
-    padding-right: var(--space-sm);
+    padding-left: var(--section-pad-x);
+    padding-right: var(--section-pad-x);
+    padding-bottom: calc(var(--space-sm) + var(--scroll-cue-space));
     gap: var(--space-sm);
+    box-sizing: border-box;
   }
 
   .physics__stage {
     height: clamp(220px, 42svh, 360px);
+    width: min(920px, 100%);
   }
 
   .physics__word {
-    font-size: clamp(2.5rem, 14vw, 5rem);
+    font-size: clamp(2.25rem, 12vw, 4.5rem);
   }
 }
 
 @media (max-width: 480px) {
   .physics__word {
-    font-size: clamp(2rem, 15vw, 3.5rem);
+    font-size: clamp(1.85rem, 13vw, 3.25rem);
   }
 
   .physics__stage {
@@ -109,7 +114,7 @@
 @media (max-height: 500px) and (orientation: landscape) {
   .physics__content {
     padding-top: calc(var(--header-height) + 0.35rem);
-    padding-bottom: 0.75rem;
+    padding-bottom: calc(0.5rem + var(--scroll-cue-space));
     gap: 0.65rem;
   }
 

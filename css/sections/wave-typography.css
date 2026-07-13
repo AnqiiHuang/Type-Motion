@@ -21,8 +21,10 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  padding: calc(var(--header-height) + var(--space-xl)) var(--space-md) var(--space-lg);
+  /* Header on top + Scroll cue below — center the word in the remaining band */
+  padding: calc(var(--header-height) + var(--space-sm)) var(--space-md) calc(var(--space-md) + var(--scroll-cue-space));
   gap: 0;
+  box-sizing: border-box;
 }
 
 .wave__label {
@@ -51,7 +53,7 @@
   column-gap: 0.02em;
   row-gap: 0.15em;
   max-width: 100%;
-  margin-top: clamp(1.5rem, 6svh, 3.5rem);
+  margin: 0;
   font-family: var(--font-display);
   font-size: clamp(2.5rem, 9vw, 7.5rem);
   font-weight: 500;
@@ -73,26 +75,32 @@
 }
 
 @media (max-width: 768px) {
-  .wave__word {
-    font-size: clamp(2rem, 11vw, 4.5rem);
-    letter-spacing: -0.02em;
-    margin-top: clamp(1.25rem, 5svh, 2.5rem);
+  .wave__content {
+    padding: calc(var(--header-height) + var(--space-sm)) var(--section-pad-x) calc(var(--space-sm) + var(--scroll-cue-space));
+    box-sizing: border-box;
   }
 
-  .wave__content {
-    padding: calc(var(--header-height) + var(--space-lg)) var(--space-sm) var(--space-md);
+  .wave__word {
+    font-size: clamp(1.85rem, 9.5vw, 4rem);
+    letter-spacing: -0.02em;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .wave__label {
     top: calc(var(--header-height) + 0.35rem);
+    left: var(--section-pad-x);
+    right: var(--section-pad-x);
+    padding: 0;
     font-size: 0.625rem;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
+    max-width: none;
   }
 }
 
 @media (max-width: 480px) {
   .wave__word {
-    font-size: clamp(1.75rem, 12vw, 3.25rem);
+    font-size: clamp(1.5rem, 8.5vw, 2.75rem);
   }
 
   .wave__space {
@@ -100,21 +108,23 @@
   }
 
   .wave__label {
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
+    line-height: 1.45;
   }
 }
 
 @media (max-height: 500px) and (orientation: landscape) {
   .wave__content {
-    padding: calc(var(--header-height) + 0.5rem) var(--space-sm) var(--space-sm);
+    padding: calc(var(--header-height) + 0.35rem) var(--section-pad-x) calc(0.5rem + var(--scroll-cue-space));
   }
 
   .wave__label {
     top: calc(var(--header-height) + 0.15rem);
+    left: var(--section-pad-x);
+    right: var(--section-pad-x);
   }
 
   .wave__word {
-    margin-top: 0.5rem;
-    font-size: clamp(1.75rem, 8vw, 3.5rem);
+    font-size: clamp(1.5rem, 7vw, 3rem);
   }
 }
