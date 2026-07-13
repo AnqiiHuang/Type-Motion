@@ -83,6 +83,7 @@ export function initFontPlayground(section) {
   const sample = section.querySelector('[data-playground-sample]');
   const controls = section.querySelector('.playground__controls');
   const preview = section.querySelector('.playground__preview');
+  const sliders = section.querySelector('.playground__sliders');
   const inputs = section.querySelectorAll('[data-playground-slider]');
   const valueEls = section.querySelectorAll('[data-playground-value]');
   const cue = section.querySelector('[data-section-cue]') || section.querySelector('.playground__eyebrow');
@@ -382,11 +383,21 @@ export function initFontPlayground(section) {
           }
         );
       }
+      if (sliders) {
+        gsap.to(sliders, {
+          opacity: 1,
+          y: 0,
+          duration: ANIMATION.duration.slow,
+          ease: ANIMATION.ease.expo,
+          delay: 0.18,
+        });
+      }
     },
   });
 
   if (controls) gsap.set(controls, { y: 20 });
   if (preview) gsap.set(preview, { opacity: 0 });
+  if (sliders) gsap.set(sliders, { y: 16, opacity: 0 });
 
   resetFontPlaygroundFn = () => {
     completed = false;
