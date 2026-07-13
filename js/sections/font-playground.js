@@ -92,6 +92,12 @@ export function initFontPlayground(section) {
   let hoverTravel = 0;
   let lastX = 0;
   let lastY = 0;
+  let sliderTouches = 0;
+  const travelNeeded =
+    Math.min(window.innerWidth, window.innerHeight) < 700 ? 90 : 180;
+  const isCoarse =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(hover: none), (pointer: coarse)').matches;
 
   const state = {
     weight: SLIDERS.weight.default,
@@ -152,6 +158,9 @@ export function initFontPlayground(section) {
       const raw = Number(input.value);
       updateLabel(key, raw);
       animateTo({ [key]: raw });
+      sliderTouches += 1;
+      // Touch / coarse pointers: sliding counts as interaction
+      if (isCoarse && sliderTouches >= 2) completeStage();
     };
 
     input.addEventListener('input', onInput);
@@ -187,7 +196,7 @@ export function initFontPlayground(section) {
 
     setCursor('hover');
 
-    if (!completed && hoverTravel > 180 && proximity > 0.2) {
+    if (!completed && hoverTravel > travelNeeded && proximity > 0.2) {
       completeStage();
     }
   };
@@ -263,6 +272,7 @@ export function initFontPlayground(section) {
   resetFontPlaygroundFn = () => {
     completed = false;
     hoverTravel = 0;
+    sliderTouches = 0;
     lastX = 0;
     lastY = 0;
     Object.keys(SLIDERS).forEach((key) => {

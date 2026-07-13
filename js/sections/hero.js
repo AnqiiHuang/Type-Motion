@@ -170,8 +170,8 @@ export function initHero(section) {
       yTo(deltaY * strength * 0.6);
     };
 
-    window.addEventListener('mousemove', onMouseMove, { passive: true });
-    cleanups.push(() => window.removeEventListener('mousemove', onMouseMove));
+    window.addEventListener('pointermove', onMouseMove, { passive: true });
+    cleanups.push(() => window.removeEventListener('pointermove', onMouseMove));
   }
 
   // ── Scroll exit — scale + fade (continuous, no cut) ─────────────────────

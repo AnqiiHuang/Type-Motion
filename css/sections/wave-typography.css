@@ -32,6 +32,7 @@
   right: 0;
   z-index: 3;
   margin: 0;
+  padding: 0 var(--space-sm);
   text-align: center;
   font-size: 0.6875rem;
   font-weight: 500;
@@ -50,7 +51,7 @@
   column-gap: 0.02em;
   row-gap: 0.15em;
   max-width: 100%;
-  margin-top: clamp(1.5rem, 6vh, 3.5rem);
+  margin-top: clamp(1.5rem, 6svh, 3.5rem);
   font-family: var(--font-display);
   font-size: clamp(2.5rem, 9vw, 7.5rem);
   font-weight: 500;
@@ -75,6 +76,7 @@
   .wave__word {
     font-size: clamp(2rem, 11vw, 4.5rem);
     letter-spacing: -0.02em;
+    margin-top: clamp(1.25rem, 5svh, 2.5rem);
   }
 
   .wave__content {
@@ -83,10 +85,8 @@
 
   .wave__label {
     top: calc(var(--header-height) + 0.35rem);
-  }
-
-  .wave__word {
-    margin-top: clamp(1.25rem, 5vh, 2.5rem);
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
   }
 }
 
@@ -97,5 +97,24 @@
 
   .wave__space {
     width: 0.22em;
+  }
+
+  .wave__label {
+    letter-spacing: 0.1em;
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .wave__content {
+    padding: calc(var(--header-height) + 0.5rem) var(--space-sm) var(--space-sm);
+  }
+
+  .wave__label {
+    top: calc(var(--header-height) + 0.15rem);
+  }
+
+  .wave__word {
+    margin-top: 0.5rem;
+    font-size: clamp(1.75rem, 8vw, 3.5rem);
   }
 }

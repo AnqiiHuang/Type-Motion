@@ -384,9 +384,17 @@
     padding: var(--space-sm);
   }
 
+  .mouse__opening {
+    white-space: normal;
+    text-align: center;
+    max-width: 90vw;
+    letter-spacing: 0.2em;
+    font-size: 0.625rem;
+  }
+
   .mouse__steps {
-    top: calc(var(--header-height) + 0.35rem);
-    gap: 0.25rem;
+    top: calc(var(--header-height) + 0.25rem);
+    gap: 0.2rem;
   }
 
   .mouse__step,
@@ -418,6 +426,52 @@
 @media (max-width: 480px) {
   .mouse__word {
     font-size: clamp(2.25rem, 18vw, 4.5rem);
+  }
+
+  .mouse__ending {
+    gap: 0.65rem;
+    padding: 0 var(--space-sm);
+  }
+}
+
+/* Short / landscape — collapse step guide to a compact row */
+@media (max-height: 560px) {
+  .mouse__steps {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem 0.45rem;
+    max-width: 92vw;
+    top: calc(var(--header-height) + 0.15rem);
+  }
+
+  .mouse__step-arrow {
+    transform: rotate(-90deg);
+    font-size: 0.55rem;
+  }
+
+  .mouse__word {
+    font-size: clamp(2rem, 12vw, 4.5rem);
+  }
+
+  .mouse__progress {
+    bottom: 10%;
+  }
+}
+
+@media (max-height: 420px) and (orientation: landscape) {
+  .mouse__steps {
+    opacity: 0.85;
+  }
+
+  .mouse__step,
+  .mouse__step-arrow {
+    font-size: 0.5rem;
+    letter-spacing: 0.1em;
+  }
+
+  .mouse__ending-title {
+    font-size: clamp(1.15rem, 5vw, 1.75rem);
   }
 }
 

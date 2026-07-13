@@ -6,7 +6,7 @@
  * Letter physics / variable-font response matches the previous installation feel.
  */
 
-import { ANIMATION, EXPERIENCE } from '../config.js';
+import { ANIMATION, EXPERIENCE, getExperienceThresholds } from '../config.js';
 import { prefersReducedMotion } from '../utils/animation.js';
 import { getPointer } from '../utils/pointer.js';
 import { sound } from '../utils/audio.js';
@@ -20,6 +20,9 @@ import {
 } from '../utils/feedback.js';
 
 const WORD = 'DESIGN';
+
+/** Viewport-scaled tutorial thresholds (refreshed on resize). */
+let thresholds = getExperienceThresholds();
 
 /** @typedef {'intro' | 'move' | 'click' | 'hold' | 'drag' | 'complete'} Phase */
 
@@ -577,7 +580,7 @@ export function initMouseInteraction(section) {
     if (reducedMotion) {
       window.setTimeout(() => {
         if (phase === 'move') completeMove();
-      }, EXPERIENCE.moveMinMs);
+      }, thresholds.moveMinMs);
     }
   }
 
@@ -1005,7 +1008,7 @@ export function initMouseInteraction(section) {
     if (reducedMotion) {
       window.setTimeout(() => {
         if (phase === 'drag') completeDrag();
-      }, EXPERIENCE.dragMinMs);
+      }, thresholds.dragMinMs);
     }
   }
 
@@ -1465,12 +1468,12 @@ export function initMouseInteraction(section) {
         }
 
         const elapsed = now - stageStartedAt;
-        const sub = clamp(moveTravel / EXPERIENCE.moveDistance, 0, 1);
+        const sub = clamp(moveTravel / thresholds.moveDistance, 0, 1);
         updateJourneyProgress(sub);
 
         if (
-          moveTravel >= EXPERIENCE.moveDistance &&
-          elapsed >= EXPERIENCE.moveMinMs
+          moveTravel >= thresholds.moveDistance &&
+          elapsed >= thresholds.moveMinMs
         ) {
           completeMove();
           rafId = requestAnimationFrame(applyEffects);
@@ -1498,8 +1501,8 @@ export function initMouseInteraction(section) {
 
         if (
           !dragReady &&
-          dragTravel >= EXPERIENCE.dragDistance &&
-          now - dragStartedAt >= EXPERIENCE.dragMinMs
+          dragTravel >= thresholds.dragDistance &&
+          now - dragStartedAt >= thresholds.dragMinMs
         ) {
           dragReady = true;
           if (!dragReleasePrompted) {
@@ -1509,7 +1512,7 @@ export function initMouseInteraction(section) {
         }
 
         updateJourneyProgress(
-          clamp(dragTravel / EXPERIENCE.dragDistance, 0, 0.95)
+          clamp(dragTravel / thresholds.dragDistance, 0, 0.95)
         );
       }
 
@@ -1909,7 +1912,10 @@ export function initMouseInteraction(section) {
     },
   });
 
-  const onResize = () => refreshCenters();
+  const onResize = () => {
+    thresholds = getExperienceThresholds();
+    refreshCenters();
+  };
   window.addEventListener('resize', onResize, { passive: true });
 
   resetMouseInteractionFn = () => {

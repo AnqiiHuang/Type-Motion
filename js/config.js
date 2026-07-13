@@ -50,7 +50,7 @@ export const ANIMATION = {
   },
 };
 
-/** Guided tutorial — Move → Click → Hold → Drag */
+/** Guided tutorial — Move → Tap → Hold → Drag */
 export const EXPERIENCE = {
   /** Opening concept hold (ms) */
   openingHoldMs: 1000,
@@ -80,10 +80,10 @@ export const EXPERIENCE = {
   endingSub: 'Explore More',
   endingCta: 'Replay',
   stages: {
-    move: 'Move Cursor',
+    move: 'Move',
     moveDone: '✓',
-    click: 'Click',
-    clickAgain: 'Click',
+    click: 'Tap',
+    clickAgain: 'Tap',
     clickDone: '✓',
     hold: 'Hold',
     holding: 'Hold',
@@ -103,6 +103,33 @@ export const EXPERIENCE = {
     stageComplete: 'Stage Complete',
   },
 };
+
+/**
+ * Scale tutorial distances/times to the current viewport (phones / landscape).
+ * @returns {{ moveDistance: number, moveMinMs: number, dragDistance: number, dragMinMs: number }}
+ */
+export function getExperienceThresholds() {
+  const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const h = typeof window !== 'undefined' ? window.innerHeight : 800;
+  const short = Math.min(w, h);
+  const isCompact = short < 700 || h < 560;
+  const isTouch =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(hover: none), (pointer: coarse)').matches;
+
+  const scale = isCompact ? Math.max(0.45, short / 900) : 1;
+
+  return {
+    moveDistance: Math.round(EXPERIENCE.moveDistance * scale),
+    moveMinMs: isTouch || isCompact
+      ? Math.round(EXPERIENCE.moveMinMs * 0.55)
+      : EXPERIENCE.moveMinMs,
+    dragDistance: Math.round(EXPERIENCE.dragDistance * Math.max(0.55, scale)),
+    dragMinMs: isTouch || isCompact
+      ? Math.round(EXPERIENCE.dragMinMs * 0.75)
+      : EXPERIENCE.dragMinMs,
+  };
+}
 
 /** Exhibition chapters shown in the progress indicator (post-tutorial) */
 export const PROGRESS_SECTIONS = [

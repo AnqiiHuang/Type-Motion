@@ -24,6 +24,8 @@
 
 .poster__label {
   flex: 0 0 auto;
+  max-width: 92vw;
+  text-align: center;
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.2em;
@@ -34,8 +36,8 @@
 
 .poster__frame {
   position: relative;
-  /* Leave room for header + label + actions inside the snapped viewport */
-  width: min(360px, 72vw, calc((100svh - var(--header-height) - 12.5rem) * 0.72));
+  /* Prefer width from viewport; never collapse below a usable size */
+  width: max(160px, min(360px, 72vw, calc((100svh - var(--header-height) - 12.5rem) * 0.75)));
   aspect-ratio: 3 / 4;
   flex: 0 1 auto;
   background: var(--color-bg-alt);
@@ -91,14 +93,24 @@
     padding-right: var(--space-sm);
   }
 
+  .poster__label {
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+  }
+
   .poster__frame {
-    width: min(320px, 70vw, calc((100svh - var(--header-height) - 13rem) * 0.72));
+    width: max(150px, min(320px, 70vw, calc((100svh - var(--header-height) - 13rem) * 0.75)));
   }
 }
 
 @media (max-width: 480px) {
+  .poster__content {
+    padding-bottom: calc(var(--space-sm) + 4.5rem);
+    gap: 0.65rem;
+  }
+
   .poster__frame {
-    width: min(280px, 68vw, calc((100svh - var(--header-height) - 13.5rem) * 0.72));
+    width: max(140px, min(280px, 78vw, calc((100svh - var(--header-height) - 13.5rem) * 0.75)));
   }
 
   .poster__actions {
@@ -108,5 +120,57 @@
   .poster__actions .btn {
     flex: 1 1 auto;
     min-width: 0;
+  }
+}
+
+/* Landscape / short viewports — keep a usable poster floor */
+@media (max-height: 560px) {
+  .poster__content {
+    padding-top: calc(var(--header-height) + 0.25rem);
+    padding-bottom: calc(var(--space-sm) + 3.25rem);
+    gap: 0.5rem;
+  }
+
+  .poster__frame {
+    width: max(120px, min(220px, 42vw, calc((100svh - var(--header-height) - 8.5rem) * 0.75)));
+  }
+
+  .poster__label {
+    font-size: 0.5625rem;
+    letter-spacing: 0.12em;
+  }
+
+  .poster__actions {
+    gap: 0.5rem;
+  }
+
+  .poster__actions .btn {
+    min-width: 6.5rem;
+    height: 2.35rem;
+    font-size: 0.625rem;
+  }
+}
+
+@media (max-height: 420px) and (orientation: landscape) {
+  .poster__content {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: center;
+    column-gap: 1.25rem;
+    row-gap: 0.5rem;
+  }
+
+  .poster__label {
+    flex: 1 1 100%;
+  }
+
+  .poster__frame {
+    width: max(100px, min(160px, 28vw, calc((100svh - var(--header-height) - 3rem) * 0.7)));
+  }
+
+  .poster__actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

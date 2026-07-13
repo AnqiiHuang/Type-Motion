@@ -59,6 +59,27 @@
   --header-height: 4rem;
   --section-min-height: 100vh;
   --section-min-height-svh: 100svh;
+  --section-pad-x: var(--space-md);
+  --section-pad-x-sm: var(--space-sm);
+
+  /* Breakpoints (documentation tokens — use matching media queries) */
+  --bp-xs: 380px;
+  --bp-sm: 480px;
+  --bp-md: 768px;
+  --bp-lg: 900px;
+}
+
+/* Compact header on narrow screens (two-row chrome) */
+@media (max-width: 600px) {
+  :root {
+    --header-height: 5.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --section-pad-x: var(--space-sm);
+  }
 }
 
 html {
