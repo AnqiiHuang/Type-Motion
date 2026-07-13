@@ -28,6 +28,34 @@
   cursor: none;
 }
 
+.section--mouse.has-custom-cursor {
+  cursor: none;
+}
+
+.section--mouse.has-custom-cursor .mouse__word,
+.section--mouse.has-custom-cursor .mouse__letter {
+  cursor: none;
+}
+
+/* Minimal custom cursor — grows near type, shrinks on press */
+.mouse__cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  border: 1px solid var(--color-text);
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  transition: opacity 0.35s var(--ease-out-expo);
+  mix-blend-mode: difference;
+}
+
 /* Subtle energy whisper — thin bottom line */
 .mouse__energy {
   position: absolute;
@@ -96,6 +124,16 @@
   will-change: transform, font-weight, text-shadow, filter;
   transform-origin: center bottom;
   backface-visibility: hidden;
+}
+
+.mouse__letter.is-outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--color-text);
+  text-shadow: none;
+}
+
+.mouse__word.is-exploding .mouse__letter {
+  transform-origin: center center;
 }
 
 /* Ending */
@@ -195,7 +233,6 @@
   }
 }
 
-/* Touch: allow vertical scroll outside active press; experience uses pointer */
 @media (hover: none) {
   .section--mouse {
     touch-action: pan-y;
@@ -203,5 +240,15 @@
 
   .mouse__letter {
     transition: none;
+  }
+
+  .mouse__cursor {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mouse__cursor {
+    display: none;
   }
 }

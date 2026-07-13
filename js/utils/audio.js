@@ -73,10 +73,10 @@ function tone({ freq = 440, dur = 0.06, type = 'sine', gain = 0.03, slide = 0 } 
 
 export const sound = {
   tick() {
-    tone({ freq: 880, dur: 0.035, type: 'triangle', gain: 0.018 });
+    tone({ freq: 920, dur: 0.028, type: 'triangle', gain: 0.012 });
   },
   pop() {
-    tone({ freq: 320, dur: 0.08, type: 'sine', gain: 0.028, slide: 220 });
+    tone({ freq: 280, dur: 0.09, type: 'sine', gain: 0.022, slide: 260 });
   },
   whoosh() {
     if (muted) return;
@@ -84,7 +84,7 @@ export const sound = {
     if (!audio || audio.state !== 'running') return;
 
     const now = audio.currentTime;
-    const bufferSize = audio.sampleRate * 0.35;
+    const bufferSize = audio.sampleRate * 0.48;
     const buffer = audio.createBuffer(1, bufferSize, audio.sampleRate);
     const data = buffer.getChannelData(0);
     for (let i = 0; i < bufferSize; i++) {
@@ -95,23 +95,23 @@ export const sound = {
     src.buffer = buffer;
     const filter = audio.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(400, now);
-    filter.frequency.exponentialRampToValueAtTime(1800, now + 0.28);
-    filter.Q.value = 0.7;
+    filter.frequency.setValueAtTime(280, now);
+    filter.frequency.exponentialRampToValueAtTime(2200, now + 0.38);
+    filter.Q.value = 0.55;
 
     const g = audio.createGain();
     g.gain.setValueAtTime(0.0001, now);
-    g.gain.exponentialRampToValueAtTime(0.045, now + 0.04);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+    g.gain.exponentialRampToValueAtTime(0.038, now + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
 
     src.connect(filter);
     filter.connect(g);
     g.connect(audio.destination);
     src.start(now);
-    src.stop(now + 0.35);
+    src.stop(now + 0.48);
   },
   soft() {
-    tone({ freq: 520, dur: 0.05, type: 'sine', gain: 0.014 });
+    tone({ freq: 480, dur: 0.055, type: 'sine', gain: 0.01 });
   },
 };
 

@@ -26,9 +26,9 @@ function notify() {
 function tick() {
   if (!running) return;
 
-  // Velocity decay (inertia feel for blur)
-  state.vx *= 0.86;
-  state.vy *= 0.86;
+  // Velocity decay (inertia feel for blur / stretch)
+  state.vx *= 0.88;
+  state.vy *= 0.88;
   state.speed = Math.hypot(state.vx, state.vy);
 
   if (state.speed < 0.05 && !state.down) {
@@ -48,9 +48,10 @@ function onMove(x, y) {
   state.py = state.y;
   state.x = x;
   state.y = y;
-  state.vx = dx;
-  state.vy = dy;
-  state.speed = Math.hypot(dx, dy);
+  // EMA blend — smoother velocity for stretch / blur
+  state.vx = state.vx * 0.35 + dx * 0.65;
+  state.vy = state.vy * 0.35 + dy * 0.65;
+  state.speed = Math.hypot(state.vx, state.vy);
   state.active = true;
 }
 

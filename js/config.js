@@ -21,14 +21,14 @@ export const ANIMATION = {
     normal: 0.8,
     slow: 1.2,
     scroll: 1.6,
-    climax: 1.8,
-    ending: 1.4,
+    climax: 2.2,
+    ending: 1.6,
   },
 
   // Mouse parallax
   parallax: {
     strength: 40, // max displacement in px
-    duration: 1.2, // follow lag
+    duration: 1.35, // follow lag
   },
 };
 
@@ -49,11 +49,16 @@ export const EXPERIENCE = {
   },
   /** Hold threshold (ms) before long-press activates */
   holdMs: 280,
+  /** Idle soft-ending after no interaction (ms) */
+  idleEndingMs: 5000,
+  /** Minimum energy before idle ending can arm */
+  idleEndingMinEnergy: 0.12,
   /** Climax reform word */
   climaxWord: 'MOTION',
-  /** Ending title */
+  /** Ending copy */
   endingTitle: 'Thank You',
-  endingCta: 'Explore Again',
+  idleEndingTitle: 'Still',
+  endingCta: 'Move Again',
 };
 
 /** Coordinated palette sets — applied randomly on load */
