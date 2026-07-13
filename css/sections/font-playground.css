@@ -1,0 +1,189 @@
+/* ==========================================================================
+   Section 3 — Variable Font Playground
+   ========================================================================== */
+
+.section--playground {
+  background-color: var(--color-bg);
+  z-index: 8;
+  align-items: stretch;
+}
+
+.playground__layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: var(--space-lg);
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  padding: calc(var(--header-height) + var(--space-md)) var(--space-md) var(--space-lg);
+  min-height: var(--section-min-height-svh);
+  align-items: center;
+}
+
+/* ── Controls ──────────────────────────────────────────────────────────── */
+
+.playground__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  opacity: 0;
+}
+
+.playground__eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.playground__heading {
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--color-text);
+  margin-top: calc(var(--space-xs) * -1);
+}
+
+.playground__sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: var(--space-xs);
+}
+
+.playground__slider {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 0.5rem 1rem;
+  align-items: baseline;
+}
+
+.playground__slider-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text);
+}
+
+.playground__slider-value {
+  font-size: 0.75rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.playground__range {
+  grid-column: 1 / -1;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 2px;
+  background: var(--color-border);
+  border-radius: 1px;
+  outline: none;
+  cursor: pointer;
+}
+
+.playground__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-text);
+  border: none;
+  cursor: grab;
+  transition: transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.playground__range::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.2);
+}
+
+.playground__range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-text);
+  border: none;
+  cursor: grab;
+}
+
+.playground__range::-moz-range-track {
+  height: 2px;
+  background: var(--color-border);
+}
+
+.playground__range:focus-visible {
+  outline: 1px solid var(--color-text);
+  outline-offset: 6px;
+}
+
+/* ── Preview ───────────────────────────────────────────────────────────── */
+
+.playground__preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  padding: var(--space-md);
+  opacity: 0;
+}
+
+.playground__sample {
+  font-family: 'Roboto Flex', var(--font-display);
+  font-size: clamp(3.5rem, 12vw, 9rem);
+  font-weight: 400;
+  font-stretch: 100%;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--color-text);
+  text-align: center;
+  user-select: none;
+  will-change: transform, font-variation-settings, letter-spacing;
+  /* Default variable axes */
+  font-variation-settings: 'wght' 400, 'wdth' 100;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .playground__layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+    padding-top: calc(var(--header-height) + var(--space-sm));
+    padding-bottom: var(--space-md);
+  }
+
+  .playground__preview {
+    order: -1;
+    min-height: 200px;
+    padding: var(--space-sm) 0;
+  }
+
+  .playground__sample {
+    font-size: clamp(3rem, 18vw, 6rem);
+  }
+
+  .playground__controls {
+    max-width: 420px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .playground__layout {
+    padding-left: var(--space-sm);
+    padding-right: var(--space-sm);
+  }
+
+  .playground__sample {
+    font-size: clamp(2.5rem, 20vw, 4.5rem);
+  }
+}

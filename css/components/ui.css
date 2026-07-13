@@ -1,0 +1,195 @@
+/* ==========================================================================
+   UI Components — Header, Scroll Hint
+   ========================================================================== */
+
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--header-height);
+  padding: 0 var(--space-md);
+  pointer-events: none;
+}
+
+.site-header__label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transition:
+    opacity var(--duration-normal) var(--ease-out-expo),
+    color var(--theme-duration, 0.7s) var(--theme-ease, var(--ease-out-expo));
+}
+
+.site-header__label.is-visible {
+  opacity: 1;
+}
+
+.site-header__themes {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-out-expo);
+}
+
+.site-header__themes.is-visible {
+  opacity: 1;
+}
+
+.site-header__themes-label {
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-right: 0.25rem;
+}
+
+.site-header__theme-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0.2rem 0;
+  font-family: var(--font-primary);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out-expo);
+}
+
+.site-header__theme-btn:hover {
+  color: var(--color-text);
+}
+
+.site-header__theme-btn.is-active {
+  color: var(--color-text);
+}
+
+.site-header__theme-btn:focus-visible {
+  outline: 1px solid var(--color-text);
+  outline-offset: 3px;
+}
+
+/* Scroll hint — bottom center */
+.scroll-hint {
+  position: fixed;
+  bottom: var(--space-md);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-out-expo);
+}
+
+.scroll-hint.is-visible {
+  opacity: 1;
+}
+
+.scroll-hint__text {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.scroll-hint__line {
+  display: block;
+  width: 1px;
+  height: 2.5rem;
+  background: linear-gradient(to bottom, var(--color-text-muted), transparent);
+  animation: scrollLinePulse 2s var(--ease-in-out) infinite;
+}
+
+@keyframes scrollLinePulse {
+  0%, 100% { transform: scaleY(1); opacity: 0.6; }
+  50% { transform: scaleY(0.6); opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .site-header {
+    padding: 0 var(--space-sm);
+  }
+
+  .site-header__themes-label {
+    display: none;
+  }
+
+  .site-header__theme-btn {
+    font-size: 0.5625rem;
+    letter-spacing: 0.04em;
+  }
+
+  .scroll-hint {
+    bottom: var(--space-sm);
+  }
+}
+
+@media (max-width: 520px) {
+  .site-header__themes {
+    gap: 0.35rem;
+    max-width: 58vw;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .site-header__themes::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ── Shared button ─────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 8.5rem;
+  height: 2.75rem;
+  padding: 0 1.5rem;
+  border: 1px solid var(--color-text);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-primary);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-out-expo),
+    color var(--duration-fast) var(--ease-out-expo),
+    transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.btn:hover {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:focus-visible {
+  outline: 1px solid var(--color-text);
+  outline-offset: 4px;
+}
+

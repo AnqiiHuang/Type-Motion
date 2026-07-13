@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Type Motion — An interactive typography laboratory">
+  <title>Type Motion</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:opsz,wght@14..32,100..900&family=Newsreader:opsz,wght@6..72,400;500;600&family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..1000&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/components/ui.css">
+  <link rel="stylesheet" href="css/sections/hero.css">
+  <link rel="stylesheet" href="css/sections/mouse-interaction.css">
+  <link rel="stylesheet" href="css/sections/font-playground.css">
+  <link rel="stylesheet" href="css/sections/wave-typography.css">
+  <link rel="stylesheet" href="css/sections/typography-physics.css">
+  <link rel="stylesheet" href="css/sections/poster-generator.css">
+  <link rel="stylesheet" href="css/sections/theme-switch.css">
+  <link rel="stylesheet" href="css/sections/about.css">
+</head>
+<body>
+
+  <!-- Fixed UI chrome -->
+  <header class="site-header">
+    <span class="site-header__label">Type Motion</span>
+    <nav class="site-header__themes" aria-label="Theme">
+      <span class="site-header__themes-label">Theme</span>
+      <button type="button" class="site-header__theme-btn" data-theme-option="minimal" aria-pressed="true">Minimal</button>
+      <button type="button" class="site-header__theme-btn" data-theme-option="brutalism" aria-pressed="false">Brutalism</button>
+      <button type="button" class="site-header__theme-btn" data-theme-option="cyber" aria-pressed="false">Cyber</button>
+      <button type="button" class="site-header__theme-btn" data-theme-option="luxury" aria-pressed="false">Luxury</button>
+      <button type="button" class="site-header__theme-btn" data-theme-option="editorial" aria-pressed="false">Editorial</button>
+    </nav>
+  </header>
+
+  <div class="scroll-hint" aria-hidden="true">
+    <span class="scroll-hint__text">Scroll</span>
+    <span class="scroll-hint__line"></span>
+  </div>
+
+  <main id="main">
+
+    <!-- Section 1: Landing Hero -->
+    <section
+      id="hero"
+      class="section section--hero"
+      data-section="hero"
+      aria-label="Landing Hero"
+    >
+      <div class="hero__bg" aria-hidden="true"></div>
+      <div class="hero__content">
+        <h1 class="hero__title" aria-label="Type">
+          <span class="hero__word" data-hero-word>TYPE</span>
+        </h1>
+      </div>
+    </section>
+
+    <!-- Section 2: Mouse Interaction -->
+    <section
+      id="mouse-interaction"
+      class="section section--mouse"
+      data-section="mouse-interaction"
+      aria-label="Mouse Interaction"
+    >
+      <div class="mouse__content">
+        <p class="mouse__label">Move closer</p>
+        <h2 class="mouse__word" data-mouse-word aria-label="Design">DESIGN</h2>
+      </div>
+    </section>
+
+    <!-- Section 3: Variable Font Playground -->
+    <section
+      id="font-playground"
+      class="section section--playground"
+      data-section="font-playground"
+      aria-label="Variable Font Playground"
+    >
+      <div class="playground__layout">
+        <aside class="playground__controls">
+          <p class="playground__eyebrow">Variable Font</p>
+          <h2 class="playground__heading">Playground</h2>
+
+          <div class="playground__sliders">
+            <label class="playground__slider">
+              <span class="playground__slider-label">Weight</span>
+              <span class="playground__slider-value" data-playground-value="weight">400</span>
+              <input
+                class="playground__range"
+                type="range"
+                data-playground-slider="weight"
+                aria-label="Font weight"
+              >
+            </label>
+
+            <label class="playground__slider">
+              <span class="playground__slider-label">Width</span>
+              <span class="playground__slider-value" data-playground-value="width">100</span>
+              <input
+                class="playground__range"
+                type="range"
+                data-playground-slider="width"
+                aria-label="Font width"
+              >
+            </label>
+
+            <label class="playground__slider">
+              <span class="playground__slider-label">Spacing</span>
+              <span class="playground__slider-value" data-playground-value="spacing">0.000</span>
+              <input
+                class="playground__range"
+                type="range"
+                data-playground-slider="spacing"
+                aria-label="Letter spacing"
+              >
+            </label>
+
+            <label class="playground__slider">
+              <span class="playground__slider-label">Rotation</span>
+              <span class="playground__slider-value" data-playground-value="rotation">0°</span>
+              <input
+                class="playground__range"
+                type="range"
+                data-playground-slider="rotation"
+                aria-label="Rotation"
+              >
+            </label>
+          </div>
+        </aside>
+
+        <div class="playground__preview">
+          <p class="playground__sample" data-playground-sample aria-live="polite">HELLO</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Wave Typography -->
+    <section
+      id="wave-typography"
+      class="section section--wave"
+      data-section="wave-typography"
+      aria-label="Wave Typography"
+    >
+      <div class="wave__content">
+        <p class="wave__label">Hover to intensify · Click to calm</p>
+        <h2 class="wave__word" data-wave-word aria-label="Brand Design">BRAND DESIGN</h2>
+      </div>
+    </section>
+
+    <!-- Section 5: Typography Physics -->
+    <section
+      id="typography-physics"
+      class="section section--physics"
+      data-section="typography-physics"
+      aria-label="Typography Physics"
+    >
+      <div class="physics__content">
+        <p class="physics__label">Gravity · Collision · Bounce</p>
+
+        <div class="physics__stage" data-physics-stage>
+          <h2 class="physics__word" data-physics-word aria-label="Physics">PHYSICS</h2>
+        </div>
+
+        <div class="physics__actions">
+          <button
+            type="button"
+            class="btn"
+            data-physics-toggle
+            aria-pressed="false"
+          >Drop</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 6: Random Poster Generator -->
+    <section
+      id="poster-generator"
+      class="section section--poster"
+      data-section="poster-generator"
+      aria-label="Random Poster Generator"
+    >
+      <div class="poster__content">
+        <p class="poster__label">Typography Poster</p>
+
+        <div class="poster__frame" aria-live="polite">
+          <canvas
+            class="poster__canvas"
+            data-poster-canvas
+            width="900"
+            height="1200"
+            role="img"
+            aria-label="Generated typography poster"
+          ></canvas>
+        </div>
+
+        <div class="poster__actions">
+          <button type="button" class="btn" data-poster-generate>
+            Generate Poster
+          </button>
+          <button type="button" class="btn btn--ghost" data-poster-download disabled>
+            Download PNG
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 7: Theme Switch -->
+    <section
+      id="theme-switch"
+      class="section section--theme"
+      data-section="theme-switch"
+      aria-label="Theme Switch"
+    >
+      <div class="theme__content">
+        <div class="theme__intro">
+          <p class="theme__eyebrow">Theme</p>
+          <h2 class="theme__current" data-theme-label>Minimal</h2>
+          <p class="theme__hint">Quiet white space. Precision without decoration.</p>
+        </div>
+
+        <div class="theme__grid" role="group" aria-label="Select theme">
+          <button type="button" class="theme__option is-active" data-theme-option="minimal" aria-pressed="true">
+            <span class="theme__option-name">Minimal</span>
+            <span class="theme__option-swatch" aria-hidden="true">
+              <span class="theme__swatch"></span>
+              <span class="theme__swatch"></span>
+              <span class="theme__swatch"></span>
+            </span>
+          </button>
+          <button type="button" class="theme__option" data-theme-option="brutalism" aria-pressed="false">
+            <span class="theme__option-name">Brutalism</span>
+            <span class="theme__option-swatch" aria-hidden="true">
+              <span class="theme__swatch"></span>
+              <span class="theme__swatch"></span>
+              <span class="theme__swatch"></span>
+            </span>
+          </button>
+          <button type="button" class="theme__option" data-theme-option="cyber" aria-pressed="false">
+            <span class="theme__option-name">Cyber</span>
+            <span class="theme__option-swatch" aria-hidden="true">
+              <span class="theme__swatch"></span>
+              <span class="theme__swatch"></span>
+              <span class="theme__swatch"></span>
+            </span>
+          </button>
+          <button type="button" class="theme__option" data-theme-option="luxury" aria-pressed="false">
+            <span class="theme__option-name">Luxury</span>
+            <span class="theme__option-swatch" aria-hidden="true">
+              <span class="theme__swatch"></span>
+              <span class="theme__swatch"></span>
+              <span class="theme__swatch"></span>
+            </span>
+          </button>
+          <button type="button" class="theme__option" data-theme-option="editorial" aria-pressed="false">
+            <span class="theme__option-name">Editorial</span>
+            <span class="theme__option-swatch" aria-hidden="true">
+              <span class="theme__swatch"></span>
+              <span class="theme__swatch"></span>
+              <span class="theme__swatch"></span>
+            </span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 8: About -->
+    <section
+      id="about"
+      class="section section--about"
+      data-section="about"
+      aria-label="About"
+    >
+      <div class="about__content">
+        <p class="about__eyebrow">About</p>
+        <h2 class="about__title">Type is Alive</h2>
+        <span class="about__rule" aria-hidden="true"></span>
+        <div class="about__body">
+          <p>Typography is not just for reading.</p>
+          <p>It can also become an interactive experience.</p>
+        </div>
+        <footer class="about__footer">
+          <p class="about__credit">Type Motion</p>
+          <p class="about__meta">An interactive typography laboratory</p>
+        </footer>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
+
+  <!-- App -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+/* ==========================================================================
+   Section 7 — Theme Switch
+   ========================================================================== */
+
+.section--theme {
+  background-color: var(--color-bg);
+  z-index: 4;
+  align-items: stretch;
+}
+
+.theme__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: min(960px, 100%);
+  margin: 0 auto;
+  min-height: var(--section-min-height-svh);
+  padding: calc(var(--header-height) + var(--space-md)) var(--space-md) var(--space-lg);
+  gap: var(--space-lg);
+}
+
+.theme__intro {
+  text-align: center;
+  opacity: 0;
+}
+
+.theme__eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.theme__current {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: clamp(2.5rem, 8vw, 5.5rem);
+  line-height: 0.95;
+  letter-spacing: var(--display-tracking);
+  color: var(--color-text);
+  text-transform: capitalize;
+}
+
+.theme__hint {
+  margin-top: var(--space-sm);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.theme__grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+  opacity: 0;
+}
+
+.theme__option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  min-height: 7.5rem;
+  padding: 1rem;
+  border: var(--btn-border-width) solid var(--color-border);
+  border-radius: var(--btn-radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-primary);
+  transition:
+    transform var(--duration-fast) var(--ease-out-expo),
+    border-color var(--duration-fast) var(--ease-out-expo),
+    background-color var(--duration-fast) var(--ease-out-expo),
+    box-shadow var(--duration-fast) var(--ease-out-expo);
+}
+
+.theme__option:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-text);
+}
+
+.theme__option.is-active {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.theme__option-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.theme__option-swatch {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.theme__swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 1px solid var(--color-border);
+}
+
+.theme__option:focus-visible {
+  outline: 1px solid var(--color-text);
+  outline-offset: 3px;
+}
+
+/* Per-option preview chips (static, independent of active theme) */
+.theme__option[data-theme-option='minimal'] .theme__swatch:nth-child(1) { background: #ffffff; }
+.theme__option[data-theme-option='minimal'] .theme__swatch:nth-child(2) { background: #0a0a0a; }
+.theme__option[data-theme-option='minimal'] .theme__swatch:nth-child(3) { background: #888888; }
+
+.theme__option[data-theme-option='brutalism'] .theme__swatch:nth-child(1) { background: #f2f0e9; }
+.theme__option[data-theme-option='brutalism'] .theme__swatch:nth-child(2) { background: #000000; }
+.theme__option[data-theme-option='brutalism'] .theme__swatch:nth-child(3) { background: #e6e2d6; }
+
+.theme__option[data-theme-option='cyber'] .theme__swatch:nth-child(1) { background: #050705; }
+.theme__option[data-theme-option='cyber'] .theme__swatch:nth-child(2) { background: #58ff8c; }
+.theme__option[data-theme-option='cyber'] .theme__swatch:nth-child(3) { background: #d8ffe3; }
+
+.theme__option[data-theme-option='luxury'] .theme__swatch:nth-child(1) { background: #141210; }
+.theme__option[data-theme-option='luxury'] .theme__swatch:nth-child(2) { background: #d4af37; }
+.theme__option[data-theme-option='luxury'] .theme__swatch:nth-child(3) { background: #f3eee6; }
+
+.theme__option[data-theme-option='editorial'] .theme__swatch:nth-child(1) { background: #fafaf8; }
+.theme__option[data-theme-option='editorial'] .theme__swatch:nth-child(2) { background: #121212; }
+.theme__option[data-theme-option='editorial'] .theme__swatch:nth-child(3) { background: #6b6b6b; }
+
+@media (max-width: 900px) {
+  .theme__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .theme__content {
+    padding-left: var(--space-sm);
+    padding-right: var(--space-sm);
+    gap: var(--space-md);
+  }
+
+  .theme__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .theme__option {
+    min-height: 6.5rem;
+  }
+}

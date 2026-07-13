@@ -1,0 +1,220 @@
+/* ==========================================================================
+   Themes — data-theme tokens on <html>
+   Default = Minimal (also mirrored in :root / base.css)
+   ========================================================================== */
+
+:root,
+[data-theme='minimal'] {
+  --color-bg: #ffffff;
+  --color-bg-alt: #f5f5f5;
+  --color-text: #0a0a0a;
+  --color-text-muted: #888888;
+  --color-border: rgba(0, 0, 0, 0.1);
+  --color-accent: #0a0a0a;
+  --color-surface: #ffffff;
+
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --btn-radius: 0;
+  --btn-border-width: 1px;
+  --btn-weight: 500;
+  --btn-tracking: 0.18em;
+  --display-weight: 700;
+  --display-tracking: -0.04em;
+  --theme-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --theme-duration: 0.7s;
+
+  --hero-grad-1: #ffffff;
+  --hero-grad-2: #f5f5f5;
+  --hero-grad-3: #ebebeb;
+  --hero-grad-4: #e0e0e0;
+}
+
+/* Brutalism — raw, heavy, confrontational */
+[data-theme='brutalism'] {
+  --color-bg: #f2f0e9;
+  --color-bg-alt: #e6e2d6;
+  --color-text: #000000;
+  --color-text-muted: #333333;
+  --color-border: #000000;
+  --color-accent: #000000;
+  --color-surface: #f2f0e9;
+
+  --font-primary: 'Space Grotesk', 'Inter', sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+
+  --btn-radius: 0;
+  --btn-border-width: 3px;
+  --btn-weight: 700;
+  --btn-tracking: 0.06em;
+  --display-weight: 700;
+  --display-tracking: -0.02em;
+  --theme-ease: cubic-bezier(0.7, 0, 0.3, 1);
+  --theme-duration: 0.4s;
+
+  --hero-grad-1: #f2f0e9;
+  --hero-grad-2: #e8e4d8;
+  --hero-grad-3: #ddd7c8;
+  --hero-grad-4: #000000;
+}
+
+/* Cyber — dark, precise, signal green */
+[data-theme='cyber'] {
+  --color-bg: #050705;
+  --color-bg-alt: #0c120e;
+  --color-text: #d8ffe3;
+  --color-text-muted: #5f8a6c;
+  --color-border: rgba(88, 255, 140, 0.22);
+  --color-accent: #58ff8c;
+  --color-surface: #08100a;
+
+  --font-primary: 'IBM Plex Mono', 'Space Grotesk', monospace;
+  --font-display: 'IBM Plex Mono', 'Space Grotesk', monospace;
+
+  --btn-radius: 0;
+  --btn-border-width: 1px;
+  --btn-weight: 500;
+  --btn-tracking: 0.22em;
+  --display-weight: 500;
+  --display-tracking: 0.04em;
+  --theme-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --theme-duration: 0.55s;
+
+  --hero-grad-1: #050705;
+  --hero-grad-2: #0a140e;
+  --hero-grad-3: #102018;
+  --hero-grad-4: #163024;
+}
+
+/* Luxury — deep charcoal, quiet gold */
+[data-theme='luxury'] {
+  --color-bg: #141210;
+  --color-bg-alt: #1c1916;
+  --color-text: #f3eee6;
+  --color-text-muted: #9a9084;
+  --color-border: rgba(212, 175, 55, 0.28);
+  --color-accent: #d4af37;
+  --color-surface: #1a1714;
+
+  --font-primary: 'Inter', sans-serif;
+  --font-display: 'Cormorant Garamond', 'Times New Roman', serif;
+
+  --btn-radius: 0;
+  --btn-border-width: 1px;
+  --btn-weight: 500;
+  --btn-tracking: 0.24em;
+  --display-weight: 600;
+  --display-tracking: -0.01em;
+  --theme-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --theme-duration: 0.9s;
+
+  --hero-grad-1: #141210;
+  --hero-grad-2: #1a1714;
+  --hero-grad-3: #221e1a;
+  --hero-grad-4: #2a241e;
+}
+
+/* Editorial — clean print, serif hierarchy */
+[data-theme='editorial'] {
+  --color-bg: #fafaf8;
+  --color-bg-alt: #f0efea;
+  --color-text: #121212;
+  --color-text-muted: #6b6b6b;
+  --color-border: rgba(18, 18, 18, 0.18);
+  --color-accent: #121212;
+  --color-surface: #fafaf8;
+
+  --font-primary: 'Inter', sans-serif;
+  --font-display: 'Newsreader', 'Georgia', serif;
+
+  --btn-radius: 0;
+  --btn-border-width: 1px;
+  --btn-weight: 500;
+  --btn-tracking: 0.14em;
+  --display-weight: 500;
+  --display-tracking: -0.025em;
+  --theme-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --theme-duration: 0.65s;
+
+  --hero-grad-1: #fafaf8;
+  --hero-grad-2: #f3f2ed;
+  --hero-grad-3: #eae8e1;
+  --hero-grad-4: #dfddd4;
+}
+
+/* Smooth global theme transitions */
+html {
+  color-scheme: light;
+}
+
+html[data-theme='cyber'],
+html[data-theme='luxury'] {
+  color-scheme: dark;
+}
+
+body,
+.section,
+.site-header__label,
+.scroll-hint__text,
+.btn,
+.playground__range,
+.playground__range::-webkit-slider-thumb,
+.poster__frame {
+  transition:
+    background-color var(--theme-duration) var(--theme-ease),
+    color var(--theme-duration) var(--theme-ease),
+    border-color var(--theme-duration) var(--theme-ease),
+    box-shadow var(--theme-duration) var(--theme-ease);
+}
+
+/* Theme-aware button chrome */
+.btn {
+  border-width: var(--btn-border-width);
+  border-radius: var(--btn-radius);
+  font-weight: var(--btn-weight);
+  letter-spacing: var(--btn-tracking);
+}
+
+.btn:hover {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-bg);
+}
+
+[data-theme='brutalism'] .btn:hover {
+  background: var(--color-text);
+  color: var(--color-bg);
+  box-shadow: 4px 4px 0 #000;
+}
+
+[data-theme='cyber'] .btn {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+[data-theme='cyber'] .btn:hover {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  box-shadow: 0 0 24px rgba(88, 255, 140, 0.25);
+}
+
+[data-theme='luxury'] .btn {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+[data-theme='luxury'] .btn:hover {
+  background: var(--color-accent);
+  color: #141210;
+}
+
+/* Display type picks up theme weight/tracking */
+.hero__title,
+.mouse__word,
+.wave__word,
+.physics__word {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+}

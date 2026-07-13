@@ -1,0 +1,98 @@
+/* ==========================================================================
+   Section 5 — Typography Physics
+   ========================================================================== */
+
+.section--physics {
+  background-color: var(--color-bg);
+  z-index: 6;
+}
+
+.physics__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: var(--section-min-height-svh);
+  padding: calc(var(--header-height) + var(--space-sm)) var(--space-md) var(--space-lg);
+  gap: var(--space-md);
+}
+
+.physics__label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  opacity: 0;
+}
+
+.physics__stage {
+  position: relative;
+  width: min(920px, 100%);
+  height: clamp(280px, 52vh, 480px);
+  overflow: hidden;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.physics__word {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.02em;
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 11vw, 8rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+  user-select: none;
+  pointer-events: none;
+}
+
+.physics__word.is-dropping {
+  /* Letters become absolutely positioned by JS */
+}
+
+.physics__letter {
+  display: inline-block;
+  will-change: transform;
+  transform-origin: center center;
+}
+
+.physics__letter.is-body {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+}
+
+.physics__actions {
+  opacity: 0;
+}
+
+@media (max-width: 768px) {
+  .physics__content {
+    padding-left: var(--space-sm);
+    padding-right: var(--space-sm);
+  }
+
+  .physics__stage {
+    height: clamp(240px, 48vh, 360px);
+  }
+
+  .physics__word {
+    font-size: clamp(2.5rem, 14vw, 5rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .physics__word {
+    font-size: clamp(2rem, 15vw, 3.5rem);
+  }
+}
