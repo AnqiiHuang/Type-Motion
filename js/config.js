@@ -68,7 +68,7 @@ export const EXPERIENCE = {
   /** Release: rearrange duration (ms) */
   releaseMs: 1400,
   /** Ending: quiet hold before Replay appears (ms) */
-  endingHoldMs: 2000,
+  endingHoldMs: 1100,
   /** Climax reform word */
   climaxWord: 'MOTION',
   /** Copy fallbacks (session may override) */

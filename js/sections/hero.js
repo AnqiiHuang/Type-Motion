@@ -107,9 +107,9 @@ export function initHero(section) {
     scrollTrigger: {
       trigger: section,
       start: 'top top',
-      end: '+=180%',
+      end: '+=70%',
       pin: true,
-      scrub: 1.4,
+      scrub: 0.55,
       anticipatePin: 1,
       onLeave: () => {
         scrollHint?.classList.remove('is-visible');

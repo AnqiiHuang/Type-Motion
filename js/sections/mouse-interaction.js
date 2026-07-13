@@ -182,6 +182,7 @@ export function initMouseInteraction(section) {
   const replayBtn = section.querySelector('[data-mouse-replay]');
   const openingEl = section.querySelector('[data-mouse-opening]');
   const openingText = section.querySelector('[data-opening-text]');
+  const scrollHint = document.querySelector('.scroll-hint');
 
   if (!wordEl) return () => {};
 
@@ -614,21 +615,14 @@ export function initMouseInteraction(section) {
       st.vx = st.vy = st.vr = st.vs = st.vsk = 0;
     });
 
-    const tl = gsap.timeline({
-      onComplete: () => {
-        section.classList.remove('is-climax');
-        wordEl.classList.remove('is-exploding');
-        transitioning = false;
-        enterEnding();
-      },
-    });
+    const tl = gsap.timeline();
 
     tl.fromTo(
       section,
       { '--climax-flash': 0.38 },
       {
         '--climax-flash': 0,
-        duration: 1.5,
+        duration: 0.9,
         ease: ANIMATION.ease.out,
       },
       0
@@ -656,46 +650,21 @@ export function initMouseInteraction(section) {
           scale: 0.22 + letterRand(i, 16) * 0.4,
           opacity: 0.1,
           filter: 'blur(2.5px)',
-          duration: 1.1,
+          duration: 0.85,
           ease: 'power3.in',
         },
-        order * 0.045
+        order * 0.03
       );
     });
 
-    tl.to({}, { duration: 0.3 });
-
+    // After explosion, wait 1s then show the ending slogan
+    tl.to({}, { duration: 1 });
     tl.add(() => {
-      gsap.killTweensOf(letters);
-      letters = buildLetters(wordEl, EXPERIENCE.climaxWord);
-      syncLetterStateArray();
-      wordEl.setAttribute('aria-label', EXPERIENCE.climaxWord);
-      gsap.set(letters, {
-        opacity: 0,
-        scale: 0.28,
-        y: 48,
-        x: () => (Math.random() - 0.5) * 70,
-        rotation: () => (Math.random() - 0.5) * 50,
-        filter: 'blur(4px)',
-      });
+      section.classList.remove('is-climax');
+      wordEl.classList.remove('is-exploding');
+      transitioning = false;
+      enterEnding();
     });
-
-    tl.to(letters, {
-      opacity: 1,
-      scale: 1,
-      y: 0,
-      x: 0,
-      rotation: 0,
-      filter: 'blur(0px)',
-      duration: ANIMATION.duration.climax,
-      ease: ANIMATION.ease.softSpring,
-      stagger: {
-        each: 0.075,
-        from: SESSION.staggerFrom === 'edges' ? 'edges' : 'center',
-      },
-    });
-
-    tl.to({}, { duration: 0.7 });
   }
 
   function enterEnding() {
@@ -715,14 +684,14 @@ export function initMouseInteraction(section) {
 
     if (label) {
       label.classList.remove('is-stage');
-      gsap.to(label, { opacity: 0, duration: 0.4 });
+      gsap.to(label, { opacity: 0, duration: 0.2 });
     }
 
     gsap.to(wordEl, {
-      opacity: 0.12,
+      opacity: 0.1,
       scale: 0.92,
       filter: 'blur(4px)',
-      duration: ANIMATION.duration.ending,
+      duration: 0.35,
       ease: ANIMATION.ease.smooth,
     });
 
@@ -731,25 +700,39 @@ export function initMouseInteraction(section) {
       gsap.set(ending, { pointerEvents: 'auto' });
       gsap.fromTo(
         ending,
-        { autoAlpha: 0, y: 16 },
+        { autoAlpha: 0, y: 6 },
         {
           autoAlpha: 1,
           y: 0,
-          duration: ANIMATION.duration.normal,
+          duration: 0.3,
           ease: ANIMATION.ease.out,
-          delay: 0.25,
         }
       );
     }
 
-    // Quiet hold, then reveal Replay
+    // Quiet hold, then reveal Replay + continue-scroll hint
     window.setTimeout(() => {
-      if (phase !== 'ending' || !replayBtn) return;
-      replayBtn.hidden = false;
-      replayBtn.classList.add('is-visible');
+      if (phase !== 'ending') return;
+      if (replayBtn) {
+        replayBtn.hidden = false;
+        replayBtn.classList.add('is-visible');
+      }
+      showContinueScrollHint();
     }, EXPERIENCE.endingHoldMs);
 
     sound.soft();
+  }
+
+  function showContinueScrollHint() {
+    if (!scrollHint) return;
+    gsap.set(scrollHint, { opacity: 1 });
+    scrollHint.classList.add('is-visible');
+  }
+
+  function hideContinueScrollHint() {
+    if (!scrollHint) return;
+    scrollHint.classList.remove('is-visible');
+    gsap.set(scrollHint, { clearProps: 'opacity' });
   }
 
   // ── Click reaction ──────────────────────────────────────────────────────
@@ -1390,6 +1373,8 @@ export function initMouseInteraction(section) {
       gsap.set(replayBtn, { clearProps: 'opacity,visibility,transform' });
     }
 
+    hideContinueScrollHint();
+
     if (openingText && openingEl) {
       const lines = [
         'Move the Type',
@@ -1616,6 +1601,26 @@ export function initMouseInteraction(section) {
     pin: true,
     pinSpacing: true,
     anticipatePin: 1,
+    onLeave: () => hideContinueScrollHint(),
+    onEnterBack: () => {
+      if (phase === 'ending' && replayBtn && !replayBtn.hidden) {
+        showContinueScrollHint();
+      }
+    },
+  });
+
+  // Fade the continue-scroll hint as the user leaves the pinned section
+  const hintFade = ScrollTrigger.create({
+    trigger: section,
+    start: 'top top',
+    end: '+=90%',
+    scrub: true,
+    onUpdate: (self) => {
+      if (phase !== 'ending' || !scrollHint?.classList.contains('is-visible')) return;
+      if (self.progress > 0.85) {
+        gsap.set(scrollHint, { opacity: 1 - (self.progress - 0.85) / 0.15 });
+      }
+    },
   });
 
   section.addEventListener('pointermove', onPointerMove, { passive: true });
@@ -1637,10 +1642,12 @@ export function initMouseInteraction(section) {
     section.removeEventListener('pointerup', onPointerUp);
     section.removeEventListener('pointercancel', onPointerUp);
     replayBtn?.removeEventListener('click', replay);
+    hideContinueScrollHint();
     stopLoop();
     entrance.kill();
     visibility.kill();
     pin.kill();
+    hintFade.kill();
     gsap.killTweensOf(letters);
     gsap.killTweensOf(wordEl);
     if (ending) gsap.killTweensOf(ending);
