@@ -107,6 +107,9 @@
   .poster__content {
     padding-bottom: calc(var(--space-sm) + 4.5rem);
     gap: 0.65rem;
+    /* Prefer top-weighted layout so snap doesn't leave a huge empty band */
+    justify-content: flex-start;
+    padding-top: calc(var(--header-height) + 0.75rem);
   }
 
   .poster__frame {

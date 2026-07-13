@@ -95,10 +95,18 @@
   appearance: none;
   width: 100%;
   height: 2px;
-  background: var(--color-border);
+  /* Larger hit area on touch without changing the visual track */
+  padding: 0.75rem 0;
+  margin: -0.75rem 0;
+  background: transparent;
+  background-image: linear-gradient(var(--color-border), var(--color-border));
+  background-size: 100% 2px;
+  background-repeat: no-repeat;
+  background-position: center;
   border-radius: 1px;
   outline: none;
   cursor: pointer;
+  touch-action: none;
 }
 
 .playground__range::-webkit-slider-thumb {
@@ -151,7 +159,8 @@
 }
 
 .playground__sample {
-  font-family: 'Roboto Flex', var(--font-display);
+  /* Keep Roboto Flex first — theme display fonts often lack a `wdth` axis */
+  font-family: 'Roboto Flex', sans-serif;
   font-size: clamp(2.75rem, 9vw, 7rem);
   font-weight: 400;
   font-stretch: 100%;
@@ -160,9 +169,10 @@
   color: var(--color-text);
   text-align: center;
   user-select: none;
-  will-change: transform, font-variation-settings, letter-spacing;
-  /* Default variable axes */
-  font-variation-settings: 'wght' 400, 'wdth' 100;
+  transform-origin: center center;
+  will-change: transform, font-weight, letter-spacing;
+  font-optical-sizing: none;
+  font-variation-settings: normal;
 }
 
 /* ── Responsive ────────────────────────────────────────────────────────── */
@@ -174,7 +184,7 @@
     gap: clamp(1.5rem, 5svh, 4rem);
     padding-top: calc(var(--header-height) + 0.75rem);
     padding-bottom: 1.75rem;
-    align-content: center;
+    align-content: start;
     justify-items: center;
     overflow-x: hidden;
     overflow-y: auto;

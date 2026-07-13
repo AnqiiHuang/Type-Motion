@@ -22,25 +22,78 @@ const POSTER_H = 1200;
 const TITLE_MAX = 16;
 
 /**
- * Build palette variants from the active theme CSS tokens
- * so posters always match the current (random) theme.
+ * Normalize a CSS color token for comparison (hex / rgb → lowercase hex key).
+ * @param {string} value
+ * @returns {string}
+ */
+function colorKey(value) {
+  const v = String(value || '').trim().toLowerCase();
+  if (!v) return '';
+  const hex = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hex) {
+    const h = hex[1];
+    if (h.length === 3) {
+      return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`;
+    }
+    return `#${h}`;
+  }
+  const rgb = v.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (rgb) {
+    const toHex = (n) => Number(n).toString(16).padStart(2, '0');
+    return `#${toHex(rgb[1])}${toHex(rgb[2])}${toHex(rgb[3])}`;
+  }
+  return v;
+}
+
+/**
+ * Build palette variants from the active theme CSS tokens.
+ * Poster backgrounds never reuse the page `--color-bg` — pick from the
+ * other colors in the same theme so the canvas reads against the section.
  */
 function getThemePalettes() {
   const styles = getComputedStyle(document.documentElement);
   const read = (prop, fallback) =>
     styles.getPropertyValue(prop).trim() || fallback;
 
-  const bg = read('--color-bg', '#ffffff');
+  const pageBg = read('--color-bg', '#ffffff');
   const alt = read('--color-bg-alt', '#f5f5f5');
   const fg = read('--color-text', '#0a0a0a');
   const muted = read('--color-text-muted', '#888888');
   const accent = read('--color-accent', fg);
+  const surface = read('--color-surface', alt);
+  const pageKey = colorKey(pageBg);
 
-  return [
-    { bg, fg, muted, accent, alt },
-    { bg: alt, fg, muted, accent, alt: bg },
-    { bg: fg, fg: bg, muted, accent: accent === fg ? bg : accent, alt },
-  ];
+  // Other theme colors — exclude page background (and near-duplicates)
+  const bgPool = [];
+  const seen = new Set();
+  for (const c of [alt, surface, fg, accent, muted]) {
+    const key = colorKey(c);
+    if (!key || key === pageKey || seen.has(key)) continue;
+    seen.add(key);
+    bgPool.push(c);
+  }
+
+  if (!bgPool.length) {
+    bgPool.push(colorKey(alt) !== pageKey ? alt : fg);
+  }
+
+  return bgPool.map((posterBg) => {
+    const bgKey = colorKey(posterBg);
+    const ink = bgKey === colorKey(fg) ? pageBg : fg;
+    let mark = accent;
+    if (colorKey(mark) === bgKey || colorKey(mark) === colorKey(ink)) {
+      mark = bgKey === colorKey(fg) ? muted : accent === fg ? pageBg : fg;
+    }
+    const secondary = colorKey(alt) === bgKey ? pageBg : alt;
+
+    return {
+      bg: posterBg,
+      fg: ink,
+      muted: colorKey(muted) === bgKey ? ink : muted,
+      accent: mark,
+      alt: secondary,
+    };
+  });
 }
 
 const TITLES = [

@@ -112,14 +112,31 @@ export function initFontPlayground(section) {
   function applyVisuals() {
     const w = proxy.weight + hoverBoost.weight;
     const wd = proxy.width + hoverBoost.width;
-    sample.style.fontVariationSettings = `'wght' ${w}, 'wdth' ${wd}`;
+    // Weight uses the real VF axis via font-weight.
+    // Width uses scaleX — font-stretch/`wdth` is unreliable here once
+    // font-weight is applied, so geometric scale keeps the control honest.
+    sample.style.fontFamily = "'Roboto Flex', sans-serif";
+    sample.style.fontVariationSettings = 'normal';
+    sample.style.fontOpticalSizing = 'none';
     sample.style.fontWeight = String(Math.round(w));
-    sample.style.fontStretch = `${wd}%`;
+    sample.style.fontStretch = '100%';
     sample.style.letterSpacing = `${proxy.spacing}em`;
-    gsap.set(sample, { rotation: proxy.rotation, scale: hoverBoost.scale });
+    gsap.set(sample, {
+      rotation: proxy.rotation,
+      scaleX: hoverBoost.scale * (wd / 100),
+      scaleY: hoverBoost.scale,
+    });
   }
 
   applyVisuals();
+
+  // Re-apply once the variable font face is ready
+  if (document.fonts?.load) {
+    document.fonts
+      .load("500 64px 'Roboto Flex'")
+      .then(() => applyVisuals())
+      .catch(() => {});
+  }
 
   function animateTo(targets) {
     Object.assign(state, targets);

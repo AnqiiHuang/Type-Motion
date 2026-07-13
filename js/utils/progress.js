@@ -36,7 +36,12 @@ export function initProgressIndicator() {
     btn.addEventListener('click', () => {
       const target = document.getElementById(item.id);
       if (!target) return;
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Pinned sections live in `.pin-spacer` — scroll that, not the inner panel
+      const parent = target.parentElement;
+      const el =
+        parent?.classList.contains('pin-spacer') ? parent : target;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top, behavior: 'smooth' });
     });
 
     li.appendChild(btn);

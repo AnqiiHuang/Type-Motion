@@ -156,6 +156,9 @@
     padding-right: var(--space-sm);
     padding-bottom: var(--space-md);
     gap: var(--space-md);
+    /* Top-align so a partial snap still shows the theme heading first */
+    justify-content: flex-start;
+    padding-top: calc(var(--header-height) + var(--space-sm));
   }
 
   .theme__grid {

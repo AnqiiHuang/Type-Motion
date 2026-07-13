@@ -20,6 +20,20 @@ function sectionScrollTop(section) {
 }
 
 /**
+ * Touch / coarse pointers: inertia overshoots and lands between panels.
+ * @returns {boolean}
+ */
+function isCoarsePointer() {
+  if (typeof ScrollTrigger !== 'undefined' && ScrollTrigger.isTouch === 1) {
+    return true;
+  }
+  return (
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(hover: none), (pointer: coarse)').matches
+  );
+}
+
+/**
  * @returns {Function} cleanup
  */
 export function initSectionSnap() {
@@ -27,6 +41,8 @@ export function initSectionSnap() {
 
   const sections = gsap.utils.toArray('.section');
   if (sections.length < 2) return () => {};
+
+  const coarse = isCoarsePointer();
 
   /** @type {(value: number) => number} */
   let snapProgress = (value) => value;
@@ -60,15 +76,32 @@ export function initSectionSnap() {
     end: 'max',
     snap: {
       snapTo: (value) => snapProgress(value),
-      duration: { min: 0.2, max: ANIMATION.duration.scroll },
-      delay: 0.06,
+      // Touch: slightly longer settle so momentum finishes before snap
+      duration: coarse
+        ? { min: 0.15, max: 0.35 }
+        : { min: 0.2, max: ANIMATION.duration.scroll },
+      delay: coarse ? 0.12 : 0.06,
       ease: ANIMATION.ease.smooth,
-      inertia: true,
+      // Inertia on mobile lands between sections (empty black gaps)
+      inertia: !coarse,
+      directional: true,
     },
   });
 
   const onRefresh = () => rebuildSnap();
   ScrollTrigger.addEventListener('refresh', onRefresh);
+
+  // Mobile browser chrome show/hide shifts layout — rebuild snap points
+  let resizeTimer = 0;
+  const onViewportChange = () => {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 120);
+  };
+
+  window.addEventListener('orientationchange', onViewportChange);
+  window.visualViewport?.addEventListener('resize', onViewportChange);
 
   // Pins from eager sections may land just after this init
   requestAnimationFrame(() => {
@@ -76,6 +109,9 @@ export function initSectionSnap() {
   });
 
   return () => {
+    window.clearTimeout(resizeTimer);
+    window.removeEventListener('orientationchange', onViewportChange);
+    window.visualViewport?.removeEventListener('resize', onViewportChange);
     ScrollTrigger.removeEventListener('refresh', onRefresh);
     trigger.kill();
   };
