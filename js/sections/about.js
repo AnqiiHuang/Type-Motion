@@ -1,11 +1,15 @@
 /**
- * Section 8 — About
+ * Section 8 — About / Ending
  *
- * Closing statement. Quiet fade-in as the experience resolves.
+ * Project statement → back to top.
  */
 
 import { ANIMATION } from '../config.js';
-import { SESSION } from '../utils/session.js';
+import {
+  resetStageProgress,
+  hideContinueHint,
+} from '../utils/feedback.js';
+import { resetMouseInteraction } from './mouse-interaction.js';
 
 /**
  * Initialize About section
@@ -18,25 +22,23 @@ export function initAbout(section) {
   const rule = section.querySelector('.about__rule');
   const body = section.querySelector('.about__body');
   const footer = section.querySelector('.about__footer');
-  const endingMeta = section.querySelector('[data-about-ending]');
+  const restartBtn = section.querySelector('[data-about-restart]');
 
-  if (endingMeta) {
-    endingMeta.textContent = SESSION.endingLine;
-  }
+  const cleanups = [];
 
-  const parts = [eyebrow, title, rule, body, footer].filter(Boolean);
+  const prep = [eyebrow, title, rule, body, footer, restartBtn].filter(Boolean);
 
-  gsap.set(parts, { opacity: 0, y: 28 });
+  gsap.set(prep, { opacity: 0, y: 24 });
 
   const entrance = ScrollTrigger.create({
     trigger: section,
     start: 'top 65%',
     once: true,
     onEnter: () => {
+      hideContinueHint();
+
       const tl = gsap.timeline({
-        defaults: {
-          ease: ANIMATION.ease.expo,
-        },
+        defaults: { ease: ANIMATION.ease.expo },
       });
 
       tl.to(eyebrow, {
@@ -51,7 +53,7 @@ export function initAbout(section) {
             y: 0,
             duration: ANIMATION.duration.slow,
           },
-          '-=0.35'
+          '-=0.2'
         )
         .to(
           rule,
@@ -60,7 +62,7 @@ export function initAbout(section) {
             y: 0,
             duration: ANIMATION.duration.normal,
           },
-          '-=0.55'
+          '-=0.45'
         )
         .to(
           body,
@@ -69,7 +71,7 @@ export function initAbout(section) {
             y: 0,
             duration: ANIMATION.duration.slow,
           },
-          '-=0.45'
+          '-=0.35'
         )
         .to(
           footer,
@@ -78,10 +80,43 @@ export function initAbout(section) {
             y: 0,
             duration: ANIMATION.duration.normal,
           },
-          '-=0.55'
+          '-=0.4'
         );
+
+      if (restartBtn) {
+        tl.to(
+          restartBtn,
+          {
+            opacity: 1,
+            y: 0,
+            duration: ANIMATION.duration.normal,
+          },
+          '-=0.25'
+        );
+      }
     },
   });
 
-  return () => entrance.kill();
+  const onRestart = (e) => {
+    e.preventDefault();
+    hideContinueHint();
+    resetStageProgress();
+    resetMouseInteraction();
+
+    const hint = document.querySelector('.scroll-hint');
+    const hintText = hint?.querySelector('.scroll-hint__text');
+    if (hintText) hintText.textContent = 'Scroll';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.setTimeout(() => ScrollTrigger.refresh(), 600);
+  };
+
+  if (restartBtn) {
+    restartBtn.addEventListener('click', onRestart);
+    cleanups.push(() => restartBtn.removeEventListener('click', onRestart));
+  }
+
+  cleanups.push(() => entrance.kill());
+
+  return () => cleanups.forEach((fn) => fn());
 }

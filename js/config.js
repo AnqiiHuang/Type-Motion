@@ -16,21 +16,24 @@ export const ANIMATION = {
     settle: 'power3.out',
   },
 
-  // Duration in seconds
+  // Duration in seconds — unified interaction rhythm
   duration: {
-    fast: 0.4,
-    normal: 0.8,
-    slow: 1.2,
-    scroll: 1.6,
-    climax: 2.2,
-    ending: 1.6,
-    opening: 1.6,
+    hover: 0.25,
+    click: 0.35,
+    scroll: 0.5,
+    reset: 0.4,
+    fast: 0.35,
+    normal: 0.5,
+    slow: 0.8,
+    climax: 1.2,
+    ending: 1.0,
+    opening: 1.0,
   },
 
   // Mouse parallax
   parallax: {
     strength: 40, // max displacement in px
-    duration: 1.35, // follow lag
+    duration: 1.0, // follow lag
   },
 
   /**
@@ -47,37 +50,64 @@ export const ANIMATION = {
   },
 };
 
-/** Guided experience journey — ~20–30s interactive installation */
+/** Guided tutorial — Move → Click → Hold → Release */
 export const EXPERIENCE = {
   /** Opening concept hold (ms) */
-  openingHoldMs: 1400,
-  /** Move: minimum explore time before progress can complete */
-  moveMinMs: 2200,
+  openingHoldMs: 1000,
+  /** Move: minimum time before completion can fire (ms) */
+  moveMinMs: 4500,
   /** Move: cursor travel near type needed to complete (px) */
-  moveDistance: 420,
+  moveDistance: 900,
+  /** Feedback hold after step success (ms) */
+  feedbackHoldMs: 500,
   /** Click: settle pause after click reaction (ms) */
-  clickSettleMs: 1100,
+  clickSettleMs: 500,
   /** Hold: minimum press duration to complete (ms) */
   holdMinMs: 900,
   /** Hold: settle after release (ms) */
-  holdSettleMs: 900,
-  /** Drag: minimum drag distance to unlock release (px) */
-  dragDistance: 160,
+  holdSettleMs: 500,
+  /** Drag: minimum drag distance to complete (px) */
+  dragDistance: 180,
   /** Drag: minimum drag time (ms) */
-  dragMinMs: 800,
-  /** Release: rearrange duration (ms) */
-  releaseMs: 1400,
-  /** Ending: quiet hold before Replay appears (ms) */
-  endingHoldMs: 1100,
-  /** Climax reform word */
-  climaxWord: 'MOTION',
-  /** Copy fallbacks (session may override) */
+  dragMinMs: 700,
+  /** Quiet hold before Replay / continue hint (ms) */
+  endingHoldMs: 800,
+  /** Clicks required before advancing */
+  clicksRequired: 2,
+  /** Copy */
   endingTitle: 'Typography Never Stands Still.',
   endingCta: 'Replay',
   stages: {
-    move: 'Move',
-    click: 'Click',
-    hold: 'Hold',
-    drag: 'Drag',
+    move: 'Move your cursor',
+    moveDone: '✓ Cursor detected',
+    click: 'Click anywhere',
+    clickAgain: 'Click again · try another spot',
+    clickDone: '✓ Nice!',
+    hold: 'Hold mouse button',
+    holding: 'Keep holding...',
+    release: 'Now release',
+    holdDone: 'Perfect!',
+    drag: 'Drag the type',
+    dragging: 'Keep dragging...',
+    dragRelease: 'Release to finish',
+    dragDone: '✓ Great!',
+  },
+  feedback: {
+    great: 'Great!',
+    nice: 'Nice!',
+    perfect: 'Perfect!',
+    completed: 'Completed',
+    unlocked: 'Unlocked',
+    stageComplete: 'Stage Complete',
   },
 };
+
+/** Exhibition chapters shown in the progress indicator (post-tutorial) */
+export const PROGRESS_SECTIONS = [
+  { id: 'font-playground', label: '01', name: 'Playground' },
+  { id: 'wave-typography', label: '02', name: 'Wave' },
+  { id: 'typography-physics', label: '03', name: 'Physics' },
+  { id: 'poster-generator', label: '04', name: 'Poster' },
+  { id: 'theme-switch', label: '05', name: 'Theme' },
+  { id: 'about', label: '06', name: 'About' },
+];

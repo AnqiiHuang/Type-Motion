@@ -1,12 +1,30 @@
 /**
  * Section 1 — Landing Hero
  *
- * Concept opening → TYPE entrance → parallax → scroll fade (TYPE out, gradient in)
+ * Concept opening → TYPE entrance → parallax →
+ * scroll exit with restrained stretch / disperse / morph
  */
 
 import { ANIMATION } from '../config.js';
 import { prefersReducedMotion } from '../utils/animation.js';
 import { SESSION } from '../utils/session.js';
+
+/**
+ * @param {HTMLElement} container
+ * @param {string} word
+ * @returns {HTMLElement[]}
+ */
+function buildLetters(container, word) {
+  container.textContent = '';
+  return [...word].map((char) => {
+    const span = document.createElement('span');
+    span.className = 'hero__letter';
+    span.textContent = char;
+    span.setAttribute('aria-hidden', 'true');
+    container.appendChild(span);
+    return span;
+  });
+}
 
 /**
  * Initialize Hero section
@@ -18,23 +36,30 @@ export function initHero(section) {
   const concept = section.querySelector('[data-hero-concept]');
   const bg = section.querySelector('.hero__bg');
   const scrollHint = document.querySelector('.scroll-hint');
+  const hintText = scrollHint?.querySelector('.scroll-hint__text');
   const headerLabel = document.querySelector('.site-header__label');
   const headerActions = document.querySelector('.site-header__actions');
 
   if (!word) return () => {};
 
+  const letters = buildLetters(word, word.textContent?.trim() || 'TYPE');
   const reducedMotion = prefersReducedMotion();
   const cleanups = [];
 
   if (concept) {
     concept.textContent = SESSION.openingLine;
   }
+  if (hintText) hintText.textContent = 'Scroll';
+
+  // Top bar is available immediately on load / refresh
+  headerLabel?.classList.add('is-visible');
+  headerActions?.classList.add('is-visible');
 
   // ── Concept Opening → TYPE ──────────────────────────────────────────────
-  gsap.set(word, { opacity: 0, scale: 1.08 });
+  gsap.set(letters, { opacity: 0, scale: 1.06, y: 8 });
   if (concept) gsap.set(concept, { opacity: 0, y: 6 });
 
-  const hold = reducedMotion ? 0.25 : ANIMATION.duration.opening * 0.85;
+  const hold = reducedMotion ? 0.25 : Math.max(0.9, ANIMATION.duration.opening * 0.95);
   const entranceTl = gsap.timeline({ delay: 0.15 });
 
   if (concept) {
@@ -42,13 +67,13 @@ export function initHero(section) {
       .to(concept, {
         opacity: 1,
         y: 0,
-        duration: 0.7,
+        duration: ANIMATION.duration.slow,
         ease: ANIMATION.ease.out,
       })
       .to(concept, {
         opacity: 0,
         y: -10,
-        duration: 0.65,
+        duration: ANIMATION.duration.normal,
         ease: ANIMATION.ease.smooth,
         delay: hold,
       });
@@ -57,25 +82,25 @@ export function initHero(section) {
   }
 
   entranceTl.to(
-    word,
+    letters,
     {
       opacity: 1,
       scale: 1,
+      y: 0,
       duration: ANIMATION.duration.slow,
       ease: ANIMATION.ease.expo,
+      stagger: 0.04,
     },
-    concept ? '-=0.2' : 0
+    concept ? '-=0.15' : 0
   );
 
-  // Show UI chrome after entrance
+  // Scroll cue after entrance
   entranceTl.call(
     () => {
       scrollHint?.classList.add('is-visible');
-      headerLabel?.classList.add('is-visible');
-      headerActions?.classList.add('is-visible');
     },
     null,
-    '-=0.35'
+    '-=0.25'
   );
 
   // ── Mouse parallax ──────────────────────────────────────────────────────
@@ -100,49 +125,64 @@ export function initHero(section) {
     cleanups.push(() => window.removeEventListener('mousemove', onMouseMove));
   }
 
-  // ── Scroll transition ───────────────────────────────────────────────────
-  // fromTo with explicit values — do NOT use .to() here: entrance sets
-  // opacity to 0 first, so a .to() would bake start=0 and snap invisible on scroll.
+  // ── Scroll transition — fade + soft stretch / disperse / morph ──────────
+  const mid = (letters.length - 1) / 2;
   const scrollTl = gsap.timeline({
     scrollTrigger: {
       trigger: section,
       start: 'top top',
       end: '+=70%',
       pin: true,
-      scrub: 0.55,
+      scrub: ANIMATION.duration.scroll,
       anticipatePin: 1,
       onLeave: () => {
         scrollHint?.classList.remove('is-visible');
       },
       onEnterBack: () => {
+        if (hintText) hintText.textContent = 'Scroll';
         scrollHint?.classList.add('is-visible');
       },
     },
   });
 
-  scrollTl
-    .fromTo(
-      word,
-      { opacity: 1 },
-      {
-        opacity: 0,
-        duration: 1,
-        ease: 'none',
-        immediateRender: false,
-      },
-      0
-    )
-    .fromTo(
-      bg,
-      { opacity: 0 },
+  letters.forEach((letter, i) => {
+    const dir = i - mid;
+    scrollTl.fromTo(
+      letter,
       {
         opacity: 1,
+        scaleX: 1,
+        scaleY: 1,
+        x: 0,
+        y: 0,
+        skewX: 0,
+      },
+      {
+        opacity: 0,
+        scaleX: 1.12 + Math.abs(dir) * 0.04,
+        scaleY: 0.92,
+        x: dir * 18,
+        y: Math.abs(dir) * -6,
+        skewX: dir * 2.5,
         duration: 1,
         ease: 'none',
         immediateRender: false,
       },
       0
     );
+  });
+
+  scrollTl.fromTo(
+    bg,
+    { opacity: 0 },
+    {
+      opacity: 1,
+      duration: 1,
+      ease: 'none',
+      immediateRender: false,
+    },
+    0
+  );
 
   // Fade out scroll hint on scroll start
   ScrollTrigger.create({

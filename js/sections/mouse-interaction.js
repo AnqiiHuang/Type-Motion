@@ -1,10 +1,9 @@
 /**
- * Section 2 — Interactive Typography Journey
+ * Section 2 — Tutorial
  *
- * Flow: Opening → Move → Click → Hold → Drag → Release → WOW → Ending → Replay
- *
+ * Flow: Opening → Move → Click×2 → Hold → Drag → Complete → Replay
  * Progressive disclosure: only the current gesture is available.
- * Feels like an interactive installation, not a playground.
+ * Letter physics / variable-font response matches the previous installation feel.
  */
 
 import { ANIMATION, EXPERIENCE } from '../config.js';
@@ -12,10 +11,17 @@ import { prefersReducedMotion } from '../utils/animation.js';
 import { getPointer } from '../utils/pointer.js';
 import { sound } from '../utils/audio.js';
 import { SESSION } from '../utils/session.js';
+import {
+  setFeedbackLabel,
+  wait,
+  showContinueHint,
+  hideContinueHint,
+  markStageComplete,
+} from '../utils/feedback.js';
 
 const WORD = 'DESIGN';
 
-/** @typedef {'intro' | 'move' | 'click' | 'hold' | 'drag' | 'release' | 'wow' | 'ending'} Phase */
+/** @typedef {'intro' | 'move' | 'click' | 'hold' | 'drag' | 'complete'} Phase */
 
 const SPRING = {
   stiffness: 0.078,
@@ -60,8 +66,25 @@ const LAYER = {
   blur: layerCatch(ANIMATION.layers.blur),
 };
 
-/** Stage order for progress UI */
-const STAGE_ORDER = ['move', 'click', 'hold', 'drag', 'release', 'wow', 'ending'];
+const STAGE_ORDER = ['move', 'click', 'hold', 'drag', 'complete'];
+
+function letterRand(i, salt = 1) {
+  const x = Math.sin(i * 12.9898 + salt * 78.233 + SESSION.tempo * 40) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function smoothstep(t) {
+  const x = Math.max(0, Math.min(1, t));
+  return x * x * (3 - 2 * x);
+}
 
 /**
  * @param {HTMLElement} container
@@ -80,32 +103,6 @@ function buildLetters(container, word) {
   });
 }
 
-function smoothstep(t) {
-  const x = Math.max(0, Math.min(1, t));
-  return x * x * (3 - 2 * x);
-}
-
-function lerp(a, b, t) {
-  return a + (b - a) * t;
-}
-
-function clamp(v, min, max) {
-  return Math.max(min, Math.min(max, v));
-}
-
-/**
- * @param {number} i
- * @param {number} salt
- */
-function letterRand(i, salt = 1) {
-  const x = Math.sin(i * 12.9898 + salt * 78.233 + SESSION.tempo * 40) * 43758.5453;
-  return x - Math.floor(x);
-}
-
-/**
- * @param {number} i
- * @param {number} total
- */
 function createLetterState(i, total = 6) {
   const r1 = letterRand(i, 1);
   const r2 = letterRand(i, 2);
@@ -164,10 +161,17 @@ function createLetterState(i, total = 6) {
     phase: i * 0.85 + r1 * 2.4,
     trait,
     outlineBias: 0.55 + r3 * 0.4,
-    /** Drag offset from pointer */
-    grabOx: 0,
-    grabOy: 0,
   };
+}
+
+/** @type {null | (() => void)} */
+let resetMouseInteractionFn = null;
+
+/**
+ * Restore section 2 to its pre-intro state (used by About → Restart).
+ */
+export function resetMouseInteraction() {
+  resetMouseInteractionFn?.();
 }
 
 /**
@@ -177,24 +181,26 @@ function createLetterState(i, total = 6) {
 export function initMouseInteraction(section) {
   const wordEl = section.querySelector('[data-mouse-word]');
   const label = section.querySelector('[data-mouse-label]') || section.querySelector('.mouse__label');
+  const openingEl = section.querySelector('[data-mouse-opening]');
+  const openingText = section.querySelector('[data-opening-text]');
   const ending = section.querySelector('[data-mouse-ending]');
   const endingTitle = section.querySelector('[data-ending-title]');
   const replayBtn = section.querySelector('[data-mouse-replay]');
-  const openingEl = section.querySelector('[data-mouse-opening]');
-  const openingText = section.querySelector('[data-opening-text]');
-  const scrollHint = document.querySelector('.scroll-hint');
 
   if (!wordEl) return () => {};
 
   if (openingText) openingText.textContent = SESSION.openingLine;
   if (endingTitle) endingTitle.textContent = SESSION.endingLine;
   if (replayBtn) {
-    replayBtn.textContent = SESSION.endingCta;
+    replayBtn.textContent = SESSION.endingCta || EXPERIENCE.endingCta;
     replayBtn.hidden = true;
     replayBtn.classList.remove('is-visible');
   }
 
   let letters = buildLetters(wordEl, WORD);
+  /** @type {ReturnType<typeof createLetterState>[]} */
+  let letterState = letters.map((_, i) => createLetterState(i, letters.length));
+
   const reducedMotion = prefersReducedMotion();
   const cleanups = [];
 
@@ -203,76 +209,42 @@ export function initMouseInteraction(section) {
   let stageStartedAt = 0;
   let active = false;
   let rafId = null;
-  let hasPointer = false;
   let frame = 0;
   let blurAmount = 0;
-  let wowDone = false;
   let transitioning = false;
-
-  // Move stage
   let moveTravel = 0;
   let lastMoveX = 0;
   let lastMoveY = 0;
   let moveTracking = false;
-
-  // Click stage
+  let clickCount = 0;
   let clickDone = false;
-
-  // Hold stage
   let holding = false;
   let holdStart = 0;
   let holdProgress = 0;
+  let holdReady = false;
   let holdComplete = false;
-
-  // Drag stage
+  let releasePrompted = false;
+  let holdOriginX = 0;
+  let holdOriginY = 0;
   let dragging = false;
   let dragStartX = 0;
   let dragStartY = 0;
   let dragTravel = 0;
   let dragStartedAt = 0;
   let dragReady = false;
+  let dragReleasePrompted = false;
+  let pointerIsDown = false;
   let pointerDownX = 0;
   let pointerDownY = 0;
-  let pointerIsDown = false;
-
-  // Cursor
-  let cursorNear = 0;
-  let cursorScale = 1;
-  let cursorRing = 1;
-  let cursorRot = 0;
-  let cursorPressed = false;
   /** @type {Array<{ x: number, y: number }>} */
   let centers = [];
 
   const influenceRadius = SESSION.influenceRadius;
+  /** Closer radius for Move progress — explore freely before advancing */
+  const progressRadius = influenceRadius * 0.62;
   const idlePeriod = SESSION.idlePeriod;
 
-  /** @type {HTMLElement | null} */
-  let cursorEl = null;
-  /** @type {HTMLElement | null} */
-  let cursorRingEl = null;
-  /** @type {HTMLElement | null} */
-  let cursorGlowEl = null;
-
-  const finePointer =
-    !reducedMotion &&
-    window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-
-  if (finePointer) {
-    cursorEl = document.createElement('div');
-    cursorEl.className = 'mouse__cursor';
-    cursorEl.setAttribute('aria-hidden', 'true');
-    cursorEl.innerHTML =
-      '<span class="mouse__cursor-glow"></span>' +
-      '<span class="mouse__cursor-ring"></span>' +
-      '<span class="mouse__cursor-dot"></span>';
-    section.appendChild(cursorEl);
-    cursorRingEl = cursorEl.querySelector('.mouse__cursor-ring');
-    cursorGlowEl = cursorEl.querySelector('.mouse__cursor-glow');
-  }
-
-  /** @type {ReturnType<typeof createLetterState>[]} */
-  const letterState = letters.map((_, i) => createLetterState(i, letters.length));
+  if (ending) gsap.set(ending, { autoAlpha: 0, pointerEvents: 'none' });
 
   function refreshCenters() {
     centers = letters.map((el) => {
@@ -281,68 +253,46 @@ export function initMouseInteraction(section) {
     });
   }
 
-  function syncLetterStateArray() {
-    while (letterState.length < letters.length) {
-      letterState.push(createLetterState(letterState.length, letters.length));
-    }
-    letterState.length = letters.length;
-    letterState.forEach((_, i) => {
-      Object.assign(letterState[i], createLetterState(i, letters.length));
-    });
-  }
-
-  /**
-   * @param {number} [sub=0] — 0–1 progress within the current stage
-   */
   function updateJourneyProgress(sub = 0) {
+    section.dataset.phase = phase;
     const idx = STAGE_ORDER.indexOf(phase);
     if (idx < 0) {
       section.style.setProperty('--journey-progress', '0');
-      section.dataset.phase = phase;
       return;
     }
     const base = idx / STAGE_ORDER.length;
     const span = 1 / STAGE_ORDER.length;
     const progress = clamp(base + span * clamp(sub, 0, 1), 0, 1);
     section.style.setProperty('--journey-progress', String(progress));
-    section.dataset.phase = phase;
   }
 
-  function setLabel(text, { stage = true } = {}) {
-    if (!label) return;
-    gsap.killTweensOf(label);
-    gsap.to(label, {
-      opacity: 0,
-      y: -6,
-      duration: 0.32,
-      ease: ANIMATION.ease.soft,
-      onComplete: () => {
-        label.textContent = text;
-        label.classList.toggle('is-stage', Boolean(text) && stage);
-        if (!text) return;
-        gsap.fromTo(
-          label,
-          { opacity: 0, y: 8 },
-          {
-            opacity: stage ? 0.92 : 0.88,
-            y: 0,
-            duration: 0.55,
-            ease: ANIMATION.ease.out,
-          }
-        );
-      },
+  function setLabel(text, stage = true) {
+    return setFeedbackLabel(label, text, { stage });
+  }
+
+  function captureToGsap() {
+    letters.forEach((el, i) => {
+      const st = letterState[i];
+      if (!st) return;
+      const sx = st.s * st.stretchCur;
+      const sy = st.s / Math.max(0.85, Math.sqrt(st.stretchCur));
+      gsap.set(el, {
+        x: st.x,
+        y: st.y,
+        rotation: st.r,
+        skewX: st.sk,
+        scaleX: sx,
+        scaleY: sy,
+        fontWeight: Math.round(st.dweight),
+      });
+      st.vx = st.vy = st.vr = st.vs = st.vsk = st.vstretch = 0;
     });
   }
 
-  /**
-   * Soft settle all letters toward rest pose via GSAP, then sync spring state.
-   * @param {number} [duration=0.9]
-   * @returns {Promise<void>}
-   */
-  function settleLetters(duration = 0.9) {
+  function settleLetters(duration = ANIMATION.duration.reset) {
     return new Promise((resolve) => {
       let pending = letters.length;
-      if (pending === 0) {
+      if (!pending) {
         resolve();
         return;
       }
@@ -353,7 +303,6 @@ export function initMouseInteraction(section) {
       letters.forEach((el, i) => {
         const st = letterState[i];
         gsap.killTweensOf(el);
-
         gsap.to(el, {
           x: 0,
           y: 0,
@@ -381,6 +330,8 @@ export function initMouseInteraction(section) {
             }
             gsap.set(el, { clearProps: 'transform,filter' });
             el.style.fontWeight = String(EFFECT.restWeight);
+            el.style.fontVariationSettings = '';
+            el.style.letterSpacing = '';
             el.style.filter = '';
             el.style.textShadow = 'none';
             el.classList.remove('is-soft-outline', 'is-outline');
@@ -393,29 +344,7 @@ export function initMouseInteraction(section) {
     });
   }
 
-  /**
-   * Capture current spring values into GSAP props for timeline handoff.
-   */
-  function captureToGsap() {
-    letters.forEach((el, i) => {
-      const st = letterState[i];
-      if (!st) return;
-      const sx = st.s * st.stretchCur;
-      const sy = st.s / Math.max(0.85, Math.sqrt(st.stretchCur));
-      gsap.set(el, {
-        x: st.x,
-        y: st.y,
-        rotation: st.r,
-        skewX: st.sk,
-        scaleX: sx,
-        scaleY: sy,
-        fontWeight: Math.round(st.dweight),
-      });
-      st.vx = st.vy = st.vr = st.vs = st.vsk = st.vstretch = 0;
-    });
-  }
-
-  // ── Stage transitions ───────────────────────────────────────────────────
+  // ── Stages ──────────────────────────────────────────────────────────────
 
   function enterMove() {
     phase = 'move';
@@ -423,405 +352,602 @@ export function initMouseInteraction(section) {
     transitioning = false;
     moveTravel = 0;
     moveTracking = false;
-    wowDone = false;
     updateJourneyProgress();
-    // Label already shown during intro; reinforce without flicker if present
-    if (label && label.textContent !== EXPERIENCE.stages.move) {
-      setLabel(EXPERIENCE.stages.move);
-    } else if (label) {
-      label.classList.add('is-stage');
-      gsap.to(label, { opacity: 0.92, y: 0, duration: 0.4, ease: ANIMATION.ease.out });
-    }
+    setLabel(EXPERIENCE.stages.move);
     refreshCenters();
     startLoop();
 
     if (reducedMotion) {
       window.setTimeout(() => {
-        if (phase === 'move') enterClick();
-      }, EXPERIENCE.moveMinMs * 0.6);
+        if (phase === 'move') completeMove();
+      }, EXPERIENCE.moveMinMs);
     }
   }
 
-  async function enterClick() {
+  async function completeMove() {
     if (phase !== 'move' || transitioning) return;
     transitioning = true;
+    sound.soft();
+    await setLabel(EXPERIENCE.stages.moveDone, false);
+    await wait(EXPERIENCE.feedbackHoldMs);
+    await enterClick();
+  }
+
+  async function enterClick() {
+    transitioning = true;
     phase = 'click';
+    clickCount = 0;
     clickDone = false;
     stageStartedAt = performance.now();
     updateJourneyProgress();
-    sound.soft();
-
-    await settleLetters(0.75);
-    setLabel(EXPERIENCE.stages.click);
+    await settleLetters(ANIMATION.duration.reset);
+    await setLabel(EXPERIENCE.stages.click);
     transitioning = false;
     refreshCenters();
 
     if (reducedMotion) {
-      window.setTimeout(() => {
-        if (phase === 'click' && !clickDone) playClickReaction(section.getBoundingClientRect().left + section.clientWidth / 2, section.getBoundingClientRect().top + section.clientHeight / 2);
-      }, 800);
+      window.setTimeout(async () => {
+        if (phase !== 'click' || clickDone) return;
+        const r = section.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        await playClickReaction(cx, cy);
+        if (phase === 'click' && !clickDone) {
+          await wait(400);
+          await playClickReaction(cx + 40, cy - 20);
+        }
+      }, 600);
+    }
+  }
+
+  async function playClickReaction(clientX, clientY) {
+    if (phase !== 'click' || clickDone || transitioning) return;
+    transitioning = true;
+    sound.pop();
+    refreshCenters();
+
+    const needed = EXPERIENCE.clicksRequired || 2;
+    const nextCount = clickCount + 1;
+
+    if (reducedMotion) {
+      clickCount = nextCount;
+      await wait(EXPERIENCE.clickSettleMs * 0.4);
+      if (clickCount >= needed) {
+        clickDone = true;
+        await setLabel(EXPERIENCE.stages.clickDone, false);
+        await wait(EXPERIENCE.feedbackHoldMs);
+        await enterHold();
+      } else {
+        await setLabel(EXPERIENCE.stages.clickDone, false);
+        await wait(EXPERIENCE.feedbackHoldMs);
+        await setLabel(EXPERIENCE.stages.clickAgain);
+        transitioning = false;
+        updateJourneyProgress(clickCount / needed);
+      }
+      return;
+    }
+
+    captureToGsap();
+
+    const wordRect = wordEl.getBoundingClientRect();
+    const wordCx = wordRect.left + wordRect.width / 2;
+    const wordCy = wordRect.top + wordRect.height / 2;
+    const halfW = Math.max(wordRect.width * 0.5, 1);
+    const halfH = Math.max(wordRect.height * 0.5, 1);
+    const nx = clamp((clientX - wordCx) / halfW, -1.4, 1.4);
+    const ny = clamp((clientY - wordCy) / halfH, -1.6, 1.6);
+    const radial = Math.hypot(nx, ny);
+
+    // Nearest letter — local impact epicenter
+    let hitIndex = 0;
+    let hitDist = Infinity;
+    centers.forEach((c, i) => {
+      const d = Math.hypot(c.x - clientX, c.y - clientY);
+      if (d < hitDist) {
+        hitDist = d;
+        hitIndex = i;
+      }
+    });
+
+    // Position picks the deformation language (not click count)
+    /** @type {'burst' | 'shoveLeft' | 'shoveRight' | 'crush' | 'lift' | 'twist'} */
+    let mode;
+    if (radial < 0.32) {
+      mode = 'burst';
+    } else if (Math.abs(nx) > Math.abs(ny) * 1.05) {
+      mode = nx < 0 ? 'shoveRight' : 'shoveLeft';
+    } else if (ny < -0.15) {
+      mode = 'crush';
+    } else if (ny > 0.2) {
+      mode = 'lift';
+    } else {
+      mode = 'twist';
+    }
+
+    await new Promise((resolve) => {
+      let pending = letters.length;
+      letters.forEach((el, i) => {
+        const st = letterState[i];
+        const c = centers[i] || { x: wordCx, y: wordCy };
+        const dx = c.x - clientX;
+        const dy = c.y - clientY;
+        const dist = Math.hypot(dx, dy) || 1;
+        const ux = dx / dist;
+        const uy = dy / dist;
+        const mid = i - (letters.length - 1) / 2;
+        const near = 1 - clamp(dist / 480, 0, 1);
+        const hitNear = 1 - clamp(Math.abs(i - hitIndex) / 3.2, 0, 1);
+        const force = 0.45 + near * 0.7 + hitNear * 0.35;
+        const delay = clamp(dist / 780, 0, 0.2) + Math.abs(i - hitIndex) * 0.018;
+
+        let x = 0;
+        let y = 0;
+        let rot = 0;
+        let scaleX = 1;
+        let scaleY = 1;
+        let weight = EFFECT.restWeight;
+        let skewX = 0;
+
+        if (mode === 'burst') {
+          // Center hit — radial explode + inflate
+          x = ux * (36 + near * 70) * force;
+          y = uy * (30 + near * 56) * force;
+          rot = (i - hitIndex) * 14 * force + ux * 18;
+          scaleX = 1.1 + near * 0.45;
+          scaleY = 1.1 + near * 0.45;
+          weight = lerp(280, 860, near);
+        } else if (mode === 'shoveLeft') {
+          // Click on the right — shove letters left, shear
+          x = -(22 + near * 64) * force + mid * 2;
+          y = Math.sin((i + 1) * 0.9) * 18 * force - near * 8;
+          rot = -(10 + near * 26) * force;
+          scaleX = 1.05 + near * 0.2;
+          scaleY = 0.92 - near * 0.08;
+          skewX = -(10 + near * 22) * force;
+          weight = lerp(300, 720, near);
+        } else if (mode === 'shoveRight') {
+          // Click on the left — shove letters right, opposite shear
+          x = (22 + near * 64) * force + mid * 2;
+          y = Math.cos((i + 1) * 0.9) * 18 * force - near * 8;
+          rot = (10 + near * 26) * force;
+          scaleX = 1.05 + near * 0.2;
+          scaleY = 0.92 - near * 0.08;
+          skewX = (10 + near * 22) * force;
+          weight = lerp(300, 720, near);
+        } else if (mode === 'crush') {
+          // Click above — squash down, heavy, wide
+          x = mid * 8 * force + ux * 12 * near;
+          y = (20 + near * 52) * force;
+          rot = mid * 6 + ux * 10;
+          scaleX = 1.12 + near * 0.38;
+          scaleY = lerp(1, 0.55, near * force);
+          weight = lerp(520, 200, near);
+          skewX = mid * 3;
+        } else if (mode === 'lift') {
+          // Click below — spring upward, tall & light
+          x = ux * 16 * force + mid * 4;
+          y = -(30 + near * 64) * force;
+          rot = mid * 10 + (letterRand(i, 31 + hitIndex) - 0.5) * 22;
+          scaleX = 0.88 - near * 0.06;
+          scaleY = 1.2 + near * 0.4;
+          weight = lerp(340, 800, near);
+          skewX = -mid * 2;
+        } else {
+          // Edge / diagonal — corkscrew twist from impact letter
+          const side = i < hitIndex ? -1 : i > hitIndex ? 1 : 0;
+          x = side * (14 + hitNear * 40) * force + ux * 10;
+          y = uy * (12 + near * 28) * force - hitNear * 16;
+          rot = side * (18 + hitNear * 36) * force + mid * 4;
+          scaleX = 1 + hitNear * 0.35;
+          scaleY = 1 + near * 0.15;
+          skewX = side * (14 + hitNear * 20);
+          weight = lerp(360, 780, hitNear);
+        }
+
+        gsap.to(el, {
+          x,
+          y,
+          rotation: rot,
+          skewX,
+          scaleX,
+          scaleY,
+          fontWeight: weight,
+          duration: 0.4 + near * 0.14,
+          ease: ANIMATION.ease.softSpring,
+          delay,
+          onComplete: () => {
+            gsap.to(el, {
+              x: 0,
+              y: 0,
+              rotation: 0,
+              skewX: 0,
+              scaleX: 1,
+              scaleY: 1,
+              fontWeight: EFFECT.restWeight,
+              duration: 0.75 + (1 - near) * 0.25,
+              ease: ANIMATION.ease.settle,
+              onComplete: () => {
+                if (st) {
+                  st.x = st.y = st.r = st.sk = 0;
+                  st.s = 1;
+                  st.vx = st.vy = st.vr = st.vs = st.vsk = 0;
+                  st.dtx = st.dty = st.dtr = st.dsk = 0;
+                  st.dts = 1;
+                  st.dweight = EFFECT.restWeight;
+                }
+                gsap.set(el, { clearProps: 'transform' });
+                el.style.fontWeight = String(EFFECT.restWeight);
+                pending -= 1;
+                if (pending <= 0) resolve();
+              },
+            });
+          },
+        });
+      });
+    });
+
+    clickCount = nextCount;
+    updateJourneyProgress(clickCount / needed);
+    await wait(EXPERIENCE.clickSettleMs * 0.3);
+    await setLabel(EXPERIENCE.stages.clickDone, false);
+    await wait(EXPERIENCE.feedbackHoldMs);
+
+    if (clickCount >= needed) {
+      clickDone = true;
+      await enterHold();
+    } else {
+      await settleLetters(ANIMATION.duration.hover);
+      await setLabel(EXPERIENCE.stages.clickAgain);
+      transitioning = false;
+      refreshCenters();
     }
   }
 
   async function enterHold() {
-    if (phase !== 'click' || transitioning) return;
     transitioning = true;
     phase = 'hold';
     holding = false;
     holdProgress = 0;
+    holdReady = false;
     holdComplete = false;
-    cursorPressed = false;
+    releasePrompted = false;
     stageStartedAt = performance.now();
     updateJourneyProgress();
-    sound.soft();
-
-    await settleLetters(EXPERIENCE.holdSettleMs / 1000);
-    setLabel(EXPERIENCE.stages.hold);
+    await settleLetters(ANIMATION.duration.reset);
+    await setLabel(EXPERIENCE.stages.hold);
     transitioning = false;
     refreshCenters();
 
     if (reducedMotion) {
       window.setTimeout(() => {
-        if (phase === 'hold') enterDrag();
-      }, EXPERIENCE.holdMinMs + EXPERIENCE.holdSettleMs);
+        if (phase === 'hold') completeHold();
+      }, EXPERIENCE.holdMinMs);
     }
   }
 
-  async function enterDrag() {
-    if (phase !== 'hold' || transitioning) return;
+  async function completeHold() {
+    if (phase !== 'hold' || holdComplete || transitioning) return;
+    holdComplete = true;
+    transitioning = true;
+    holding = false;
+    sound.whoosh();
+    await explodeFromHold();
+    await settleLetters(ANIMATION.duration.reset);
+    await setLabel(EXPERIENCE.stages.holdDone, false);
+    await wait(EXPERIENCE.feedbackHoldMs);
+    await enterDrag();
+  }
 
+  /**
+   * Burst letters outward from the hold point, then settle into drag.
+   */
+  function explodeFromHold() {
+    return new Promise((resolve) => {
+      if (!letters.length) {
+        resolve();
+        return;
+      }
+
+      if (reducedMotion) {
+        resolve();
+        return;
+      }
+
+      captureToGsap();
+      refreshCenters();
+
+      const originX = holdOriginX;
+      const originY = holdOriginY;
+      let pending = letters.length;
+
+      letters.forEach((el, i) => {
+        const st = letterState[i];
+        const c = centers[i] || { x: originX, y: originY };
+        const dx = c.x - originX;
+        const dy = c.y - originY;
+        const dist = Math.hypot(dx, dy) || 1;
+        const ux = dx / dist;
+        const uy = dy / dist;
+        const mid = i - (letters.length - 1) / 2;
+        const scatter = 0.7 + letterRand(i, 71) * 0.9;
+        const burst = (90 + letterRand(i, 72) * 160) * scatter;
+        const lift = 30 + letterRand(i, 73) * 70;
+        const spin = mid * 28 + (letterRand(i, 74) - 0.5) * 70;
+        const delay = Math.abs(mid) * 0.02 + letterRand(i, 75) * 0.04;
+
+        gsap.killTweensOf(el);
+        gsap.to(el, {
+          x: (st?.x || 0) + ux * burst + mid * 18,
+          y: (st?.y || 0) + uy * burst * 0.85 + lift,
+          rotation: (st?.r || 0) + spin,
+          skewX: mid * 10 + (letterRand(i, 76) - 0.5) * 16,
+          scaleX: 1.2 + letterRand(i, 77) * 0.55,
+          scaleY: 0.65 + letterRand(i, 78) * 0.35,
+          opacity: 0.2 + letterRand(i, 79) * 0.35,
+          filter: `blur(${(2 + letterRand(i, 80) * 5).toFixed(1)}px)`,
+          duration: 0.48,
+          delay,
+          ease: 'power3.out',
+          onComplete: () => {
+            pending -= 1;
+            if (pending <= 0) resolve();
+          },
+        });
+      });
+    });
+  }
+
+  async function enterDrag() {
     transitioning = true;
     phase = 'drag';
     dragging = false;
     dragTravel = 0;
     dragReady = false;
+    dragReleasePrompted = false;
     pointerIsDown = false;
     stageStartedAt = performance.now();
     updateJourneyProgress();
-    sound.soft();
-
-    await settleLetters(0.65);
-    setLabel(EXPERIENCE.stages.drag);
+    await settleLetters(ANIMATION.duration.reset);
+    await setLabel(EXPERIENCE.stages.drag);
     transitioning = false;
     refreshCenters();
 
     if (reducedMotion) {
       window.setTimeout(() => {
-        if (phase === 'drag') enterRelease();
+        if (phase === 'drag') completeDrag();
       }, EXPERIENCE.dragMinMs);
     }
   }
 
-  function enterRelease() {
+  async function completeDrag() {
     if (phase !== 'drag' || transitioning) return;
     transitioning = true;
-    phase = 'release';
     dragging = false;
-    cursorPressed = false;
-    stageStartedAt = performance.now();
-    updateJourneyProgress();
-    setLabel('');
-    sound.soft();
-
-    captureToGsap();
-
-    const tl = gsap.timeline({
-      onComplete: () => {
-        letters.forEach((el, i) => {
-          const st = letterState[i];
-          if (st) {
-            st.x = st.y = st.r = st.sk = 0;
-            st.s = 1;
-            st.stretchCur = 1;
-            st.dtx = st.dty = st.dtr = st.dsk = 0;
-            st.dts = 1;
-            st.dweight = EFFECT.restWeight;
-            st.dstretch = EFFECT.restStretch;
-            st.vx = st.vy = st.vr = st.vs = st.vsk = st.vstretch = 0;
-          }
-          gsap.set(el, { clearProps: 'transform,filter' });
-          el.style.fontWeight = String(EFFECT.restWeight);
-          el.style.filter = '';
-          el.classList.remove('is-soft-outline', 'is-outline');
-        });
-        transitioning = false;
-        enterWow();
-      },
-    });
-
-    letters.forEach((el, i) => {
-      const order = SESSION.waveDir === 1 ? i : letters.length - 1 - i;
-      const st = letterState[i];
-      tl.to(
-        el,
-        {
-          x: 0,
-          y: 0,
-          rotation: 0,
-          skewX: 0,
-          scaleX: 1,
-          scaleY: 1,
-          fontWeight: EFFECT.restWeight,
-          filter: 'blur(0px)',
-          opacity: 1,
-          duration: EXPERIENCE.releaseMs / 1000,
-          ease: ANIMATION.ease.settle,
-        },
-        order * 0.07
-      );
-      if (st) {
-        tl.to(
-          st,
-          {
-            dweight: EFFECT.restWeight,
-            dstretch: EFFECT.restStretch,
-            dtrack: EFFECT.restTracking,
-            duration: EXPERIENCE.releaseMs / 1000,
-            ease: ANIMATION.ease.settle,
-          },
-          order * 0.07
-        );
-      }
-    });
-  }
-
-  function enterWow() {
-    if (wowDone || phase === 'wow' || phase === 'ending') return;
-    wowDone = true;
-    phase = 'wow';
-    transitioning = true;
-    hasPointer = false;
-    stageStartedAt = performance.now();
-    updateJourneyProgress();
-    setLabel('');
-    wordEl.style.filter = 'none';
-    wordEl.classList.add('is-exploding');
-    section.classList.add('is-climax');
     sound.whoosh();
-
-    letters.forEach((el, i) => {
-      const st = letterState[i];
-      if (!st) return;
-      gsap.set(el, {
-        x: st.x,
-        y: st.y,
-        rotation: st.r,
-        skewX: st.sk,
-        scale: st.s,
-        opacity: 1,
-      });
-      el.style.textShadow = 'none';
-      el.classList.remove('is-soft-outline');
-      st.vx = st.vy = st.vr = st.vs = st.vsk = 0;
-    });
-
-    const tl = gsap.timeline();
-
-    tl.fromTo(
-      section,
-      { '--climax-flash': 0.38 },
-      {
-        '--climax-flash': 0,
-        duration: 0.9,
-        ease: ANIMATION.ease.out,
-      },
-      0
-    );
-
-    letters.forEach((el, i) => {
-      const angle =
-        (i / letters.length) * Math.PI * 2 -
-        Math.PI / 2 +
-        (letterRand(i, 12) - 0.5) * 0.35;
-      const dist = 170 + letterRand(i, 13) * 200;
-      const spin =
-        (letterRand(i, 14) > 0.5 ? 1 : -1) * (200 + letterRand(i, 15) * 260);
-      const order = SESSION.waveDir === 1 ? i : letters.length - 1 - i;
-
-      el.classList.add('is-outline');
-
-      tl.to(
-        el,
-        {
-          x: Math.cos(angle) * dist,
-          y: Math.sin(angle) * dist,
-          rotation: spin,
-          skewX: 0,
-          scale: 0.22 + letterRand(i, 16) * 0.4,
-          opacity: 0.1,
-          filter: 'blur(2.5px)',
-          duration: 0.85,
-          ease: 'power3.in',
-        },
-        order * 0.03
-      );
-    });
-
-    // After explosion, wait 1s then show the ending slogan
-    tl.to({}, { duration: 1 });
-    tl.add(() => {
-      section.classList.remove('is-climax');
-      wordEl.classList.remove('is-exploding');
-      transitioning = false;
-      enterEnding();
-    });
+    await settleLetters(ANIMATION.duration.reset);
+    await setLabel(EXPERIENCE.stages.dragDone, false);
+    await wait(EXPERIENCE.feedbackHoldMs);
+    enterComplete();
   }
 
-  function enterEnding() {
-    phase = 'ending';
-    stopLoop();
+  function enterComplete() {
+    phase = 'complete';
+    updateJourneyProgress(1);
+    markStageComplete('tutorial');
     transitioning = false;
-    updateJourneyProgress();
-    if (cursorEl) cursorEl.style.opacity = '0';
-    section.classList.remove('has-custom-cursor');
-
-    if (endingTitle) endingTitle.textContent = SESSION.endingLine;
-    if (replayBtn) {
-      replayBtn.hidden = true;
-      replayBtn.classList.remove('is-visible');
-      replayBtn.textContent = SESSION.endingCta;
-    }
+    stopLoop();
 
     if (label) {
-      label.classList.remove('is-stage');
-      gsap.to(label, { opacity: 0, duration: 0.2 });
+      gsap.to(label, { opacity: 0, duration: 0.25, ease: ANIMATION.ease.soft });
     }
 
     gsap.to(wordEl, {
-      opacity: 0.1,
-      scale: 0.92,
-      filter: 'blur(4px)',
-      duration: 0.35,
+      opacity: 0.12,
+      scale: 0.94,
+      filter: 'blur(3px)',
+      duration: 0.4,
       ease: ANIMATION.ease.smooth,
     });
 
+    if (endingTitle) endingTitle.textContent = SESSION.endingLine;
     if (ending) {
       ending.setAttribute('aria-hidden', 'false');
       gsap.set(ending, { pointerEvents: 'auto' });
       gsap.fromTo(
         ending,
-        { autoAlpha: 0, y: 6 },
+        { autoAlpha: 0, y: 8 },
         {
           autoAlpha: 1,
           y: 0,
-          duration: 0.3,
+          duration: 0.45,
           ease: ANIMATION.ease.out,
         }
       );
     }
 
-    // Quiet hold, then reveal Replay + continue-scroll hint
     window.setTimeout(() => {
-      if (phase !== 'ending') return;
+      if (phase !== 'complete') return;
       if (replayBtn) {
         replayBtn.hidden = false;
         replayBtn.classList.add('is-visible');
       }
-      showContinueScrollHint();
+      showContinueHint('Scroll');
     }, EXPERIENCE.endingHoldMs);
-
-    sound.soft();
   }
 
-  function showContinueScrollHint() {
-    if (!scrollHint) return;
-    gsap.set(scrollHint, { opacity: 1 });
-    scrollHint.classList.add('is-visible');
-  }
-
-  function hideContinueScrollHint() {
-    if (!scrollHint) return;
-    scrollHint.classList.remove('is-visible');
-    gsap.set(scrollHint, { clearProps: 'opacity' });
-  }
-
-  // ── Click reaction ──────────────────────────────────────────────────────
-
-  function playClickReaction(clientX, clientY) {
-    if (phase !== 'click' || clickDone || transitioning) return;
-    clickDone = true;
-    transitioning = true;
-    sound.pop();
-    setLabel('');
-
-    if (reducedMotion) {
-      gsap.fromTo(
-        letters,
-        { opacity: 0.5 },
-        {
-          opacity: 1,
-          duration: 0.45,
-          stagger: 0.04,
-          ease: ANIMATION.ease.out,
-          onComplete: () => {
-            transitioning = false;
-            window.setTimeout(() => enterHold(), EXPERIENCE.clickSettleMs * 0.5);
-          },
-        }
-      );
-      return;
-    }
-
-    captureToGsap();
-    let pending = letters.length;
-
+  function resetLetterStyles() {
     letters.forEach((el, i) => {
       const st = letterState[i];
-      const mid = i - (letters.length - 1) / 2;
-      const waveY = Math.sin(i * 0.9) * 36;
-      const rot = mid * 9 + (letterRand(i, 20) - 0.5) * 18;
-      const scale = 1.18 + letterRand(i, 21) * 0.28;
-      const weight = 200 + letterRand(i, 22) * 700;
-      const delay = Math.abs(mid) * 0.045;
+      if (st) {
+        st.tx = st.ty = st.tr = st.skew = 0;
+        st.dtx = st.dty = st.dtr = st.dsk = 0;
+        st.x = st.y = st.r = st.sk = 0;
+        st.vx = st.vy = st.vr = st.vs = st.vsk = st.vstretch = 0;
+        st.ts = st.dts = st.s = 1;
+        st.stretch = st.dstretch = st.stretchCur = EFFECT.restStretch;
+        st.track = st.dtrack = EFFECT.restTracking;
+        st.opsz = st.dopsz = EFFECT.restOpsz;
+        st.blur = st.dblur = 0;
+        st.weight = st.dweight = EFFECT.restWeight;
+      }
+      el.style.transform = '';
+      el.style.fontWeight = String(EFFECT.restWeight);
+      el.style.fontVariationSettings = '';
+      el.style.letterSpacing = '';
+      el.style.textShadow = 'none';
+      el.style.filter = '';
+      el.style.opacity = '';
+      el.style.removeProperty('--outline-mix');
+      el.classList.remove('is-outline', 'is-soft-outline');
+    });
+    wordEl.style.filter = 'none';
+    blurAmount = 0;
+  }
 
-      gsap.to(el, {
-        x: mid * 14,
-        y: waveY - 18,
-        rotation: rot,
-        scale,
-        fontWeight: weight,
-        duration: 0.45,
-        ease: ANIMATION.ease.softSpring,
-        delay,
-        onComplete: () => {
-          gsap.to(el, {
-            x: 0,
-            y: 0,
-            rotation: 0,
-            scale: 1,
-            fontWeight: EFFECT.restWeight,
-            duration: 0.85,
-            ease: ANIMATION.ease.settle,
-            onComplete: () => {
-              if (st) {
-                st.x = st.y = st.r = 0;
-                st.s = 1;
-                st.vx = st.vy = st.vr = st.vs = 0;
-                st.dtx = st.dty = st.dtr = 0;
-                st.dts = 1;
-                st.dweight = EFFECT.restWeight;
-              }
-              gsap.set(el, { clearProps: 'transform' });
-              el.style.fontWeight = String(EFFECT.restWeight);
-              pending -= 1;
-              if (pending <= 0) {
-                transitioning = false;
-                window.setTimeout(() => {
-                  if (phase === 'click') enterHold();
-                }, EXPERIENCE.clickSettleMs * 0.35);
-              }
-            },
-          });
-        },
-      });
+  function clearInteractionFlags() {
+    moveTravel = 0;
+    moveTracking = false;
+    clickCount = 0;
+    clickDone = false;
+    holding = false;
+    holdProgress = 0;
+    holdReady = false;
+    holdComplete = false;
+    releasePrompted = false;
+    dragging = false;
+    dragTravel = 0;
+    dragReady = false;
+    dragReleasePrompted = false;
+    transitioning = false;
+    pointerIsDown = false;
+  }
+
+  /**
+   * Hard reset to first-visit intro state (opening ready, journey cleared).
+   */
+  function resetToInitial() {
+    stopLoop();
+    hideContinueHint();
+    clearInteractionFlags();
+    phase = 'intro';
+
+    const targets = [wordEl, label, openingEl, ending, replayBtn, ...letters].filter(
+      Boolean
+    );
+    gsap.killTweensOf(targets);
+
+    if (ending) {
+      ending.setAttribute('aria-hidden', 'true');
+      gsap.set(ending, { autoAlpha: 0, pointerEvents: 'none', y: 0 });
+    }
+
+    if (replayBtn) {
+      replayBtn.hidden = true;
+      replayBtn.classList.remove('is-visible');
+      gsap.set(replayBtn, { clearProps: 'opacity,visibility,transform' });
+    }
+
+    if (openingText) openingText.textContent = SESSION.openingLine;
+    if (openingEl) {
+      openingEl.setAttribute('aria-hidden', 'true');
+      gsap.set(openingEl, { opacity: 0, visibility: 'hidden', y: 0 });
+    }
+
+    letters = buildLetters(wordEl, WORD);
+    letterState = letters.map((_, i) => createLetterState(i, letters.length));
+    wordEl.setAttribute('aria-label', WORD);
+    resetLetterStyles();
+    gsap.set(wordEl, { clearProps: 'opacity,scale,filter,transform' });
+    gsap.set(letters, { clearProps: 'opacity,transform,filter' });
+
+    if (label) {
+      label.textContent = '';
+      label.classList.remove('is-stage', 'is-feedback');
+      gsap.set(label, { opacity: 0, y: 0 });
+    }
+
+    updateJourneyProgress();
+  }
+
+  function rearmEntrance() {
+    entrance.kill();
+    entrance = ScrollTrigger.create({
+      trigger: section,
+      start: 'top 65%',
+      once: true,
+      onEnter: startIntro,
     });
   }
 
-  // ── Spring step ─────────────────────────────────────────────────────────
+  function replay() {
+    if (phase !== 'complete') return;
+    sound.pop();
+    hideContinueHint();
+    clearInteractionFlags();
 
-  /**
-   * @param {ReturnType<typeof createLetterState>} st
-   */
+    if (ending) {
+      ending.setAttribute('aria-hidden', 'true');
+      gsap.to(ending, {
+        autoAlpha: 0,
+        y: -8,
+        duration: 0.35,
+        ease: ANIMATION.ease.soft,
+        onComplete: () => gsap.set(ending, { pointerEvents: 'none', y: 0 }),
+      });
+    }
+
+    if (replayBtn) {
+      replayBtn.hidden = true;
+      replayBtn.classList.remove('is-visible');
+      gsap.set(replayBtn, { clearProps: 'opacity,visibility,transform' });
+    }
+
+    if (openingText && openingEl) {
+      openingText.textContent = SESSION.openingLine;
+      gsap.set(openingEl, { opacity: 1, visibility: 'visible', y: 0 });
+    }
+
+    letters = buildLetters(wordEl, WORD);
+    letterState = letters.map((_, i) => createLetterState(i, letters.length));
+    wordEl.setAttribute('aria-label', WORD);
+    resetLetterStyles();
+
+    gsap.set(wordEl, { opacity: 1, scale: 1, filter: 'none', y: 0 });
+    gsap.set(letters, { opacity: 0, y: 24 });
+    if (label) gsap.set(label, { opacity: 0, y: 8 });
+
+    const hold = reducedMotion ? 0.15 : 0.75;
+    const tl = gsap.timeline({ onComplete: () => enterMove() });
+
+    if (openingEl) {
+      tl.to(openingEl, {
+        opacity: 0,
+        duration: ANIMATION.duration.hover,
+        ease: ANIMATION.ease.soft,
+        delay: hold,
+        onComplete: () => {
+          openingEl.style.visibility = 'hidden';
+        },
+      });
+    } else {
+      tl.to({}, { duration: hold * 0.4 });
+    }
+
+    tl.to(
+      letters,
+      {
+        opacity: 1,
+        y: 0,
+        duration: ANIMATION.duration.slow,
+        ease: ANIMATION.ease.expo,
+        stagger: 0.04,
+      },
+      openingEl ? '-=0.05' : 0
+    );
+  }
+
+  // ── Spring / paint ──────────────────────────────────────────────────────
+
   function springStep(st) {
     const nearRest =
       Math.abs(st.dtx) < 0.4 &&
@@ -852,12 +978,6 @@ export function initMouseInteraction(section) {
     if (Math.abs(st.vy) < 0.001) st.vy = 0;
   }
 
-  /**
-   * Apply visual styles from spring state.
-   * @param {HTMLElement} el
-   * @param {ReturnType<typeof createLetterState>} st
-   * @param {number} amp
-   */
   function paintLetter(el, st, amp) {
     const sx = st.s * st.stretchCur;
     const sy = st.s / Math.max(0.85, Math.sqrt(st.stretchCur));
@@ -888,10 +1008,6 @@ export function initMouseInteraction(section) {
         : 'none';
   }
 
-  /**
-   * Layered catch toward live targets.
-   * @param {ReturnType<typeof createLetterState>} st
-   */
   function catchLayers(st) {
     const wave = st.wave;
     st.dtx = lerp(st.dtx, st.tx, wave * LAYER.scale);
@@ -906,7 +1022,7 @@ export function initMouseInteraction(section) {
     st.dblur = lerp(st.dblur, st.blur, wave * LAYER.blur);
   }
 
-  // ── Main loop ───────────────────────────────────────────────────────────
+  // ── Physics loop ────────────────────────────────────────────────────────
 
   function applyEffects() {
     if (!active) return;
@@ -914,40 +1030,14 @@ export function initMouseInteraction(section) {
     const pointer = getPointer();
     const mouseX = pointer.x;
     const mouseY = pointer.y;
+    const hasPointer = pointer.active;
     const now = performance.now();
     const velNorm = clamp(pointer.speed / 38, 0, 1);
     const velEase = smoothstep(velNorm);
     const interactive =
       phase === 'move' || phase === 'click' || phase === 'hold' || phase === 'drag';
 
-    // Custom cursor
-    if (cursorEl && interactive) {
-      cursorScale = lerp(cursorScale, cursorPressed ? 0.68 : 1 + cursorNear * 0.55, 0.16);
-      cursorRing = lerp(cursorRing, 1 + cursorNear * 1.2 + velEase * 0.2, 0.12);
-      const targetRot =
-        pointer.speed > 0.8
-          ? Math.atan2(pointer.vy, pointer.vx) * (180 / Math.PI)
-          : cursorRot;
-      cursorRot = lerp(cursorRot, targetRot, 0.08);
-
-      cursorEl.style.transform =
-        `translate3d(${mouseX.toFixed(1)}px, ${mouseY.toFixed(1)}px, 0) ` +
-        `rotate(${cursorRot.toFixed(2)}deg) scale(${cursorScale.toFixed(3)})`;
-      cursorEl.style.opacity = hasPointer ? '1' : '0';
-      cursorEl.classList.toggle('is-near', cursorNear > 0.12);
-      cursorEl.classList.toggle('is-pressed', cursorPressed);
-      if (cursorRingEl) cursorRingEl.style.transform = `scale(${cursorRing.toFixed(3)})`;
-      if (cursorGlowEl) {
-        cursorGlowEl.style.opacity = String((0.08 + cursorNear * 0.2).toFixed(3));
-      }
-      section.classList.toggle('has-custom-cursor', hasPointer);
-    } else if (cursorEl) {
-      cursorEl.style.opacity = '0';
-      section.classList.remove('has-custom-cursor');
-    }
-
-    // Soft word blur only during move/drag
-    if ((phase === 'move' || phase === 'drag') && !reducedMotion) {
+    if (phase === 'move' && !reducedMotion) {
       const targetBlur =
         Math.min(pointer.speed * 0.08, 2.8) * SESSION.hoverIntensity;
       blurAmount = lerp(blurAmount, hasPointer ? targetBlur : 0, LAYER.blur);
@@ -961,14 +1051,12 @@ export function initMouseInteraction(section) {
         refreshCenters();
       }
 
-      let maxInfluence = 0;
       const t = now * idlePeriod;
       const intensity = SESSION.hoverIntensity;
       const rotRange = SESSION.rotateRange;
       const scaleRange = SESSION.scaleRange;
       const velScale = SESSION.velStretch;
 
-      // Move progress: accumulate travel near type
       if (phase === 'move' && hasPointer) {
         if (!moveTracking) {
           lastMoveX = mouseX;
@@ -979,47 +1067,47 @@ export function initMouseInteraction(section) {
           lastMoveX = mouseX;
           lastMoveY = mouseY;
 
-          // Only count travel when near letters
           let near = false;
           for (let i = 0; i < centers.length; i++) {
             const c = centers[i];
-            if (Math.hypot(mouseX - c.x, mouseY - c.y) < influenceRadius) {
+            if (Math.hypot(mouseX - c.x, mouseY - c.y) < progressRadius) {
               near = true;
               break;
             }
           }
-          if (near && step < 80) {
+          // Cap per-frame credit so slow exploration counts more fairly
+          if (near && step > 0.4 && step < 56) {
             moveTravel += step;
             if (pointer.speed > 8 && frame % 10 === 0) sound.tick();
           }
         }
 
         const elapsed = now - stageStartedAt;
+        const sub = clamp(moveTravel / EXPERIENCE.moveDistance, 0, 1);
+        updateJourneyProgress(sub);
+
         if (
           moveTravel >= EXPERIENCE.moveDistance &&
           elapsed >= EXPERIENCE.moveMinMs
         ) {
-          enterClick();
+          completeMove();
           rafId = requestAnimationFrame(applyEffects);
           return;
         }
-
-        updateJourneyProgress(
-          clamp(moveTravel / EXPERIENCE.moveDistance, 0, 0.95)
-        );
       }
 
-      // Hold progress
       if (phase === 'hold' && holding) {
-        holdProgress = Math.min(
-          1,
-          (now - holdStart) / EXPERIENCE.holdMinMs
-        );
-        if (holdProgress >= 1) holdComplete = true;
+        holdProgress = Math.min(1, (now - holdStart) / EXPERIENCE.holdMinMs);
         updateJourneyProgress(holdProgress);
+        if (holdProgress >= 1 && !holdReady) {
+          holdReady = true;
+          if (!releasePrompted) {
+            releasePrompted = true;
+            setLabel(EXPERIENCE.stages.release);
+          }
+        }
       }
 
-      // Drag travel
       if (phase === 'drag' && dragging) {
         const step = Math.hypot(mouseX - lastMoveX, mouseY - lastMoveY);
         lastMoveX = mouseX;
@@ -1032,6 +1120,10 @@ export function initMouseInteraction(section) {
           now - dragStartedAt >= EXPERIENCE.dragMinMs
         ) {
           dragReady = true;
+          if (!dragReleasePrompted) {
+            dragReleasePrompted = true;
+            setLabel(EXPERIENCE.stages.dragRelease);
+          }
         }
 
         updateJourneyProgress(
@@ -1048,11 +1140,9 @@ export function initMouseInteraction(section) {
         const dy = mouseY - center.y;
         const dist = Math.hypot(dx, dy);
         const influence =
-          hasPointer && (phase === 'move' || phase === 'drag' || phase === 'hold')
+          hasPointer && (phase === 'move' || phase === 'hold' || phase === 'drag')
             ? smoothstep(1 - dist / influenceRadius)
             : 0;
-
-        if (influence > maxInfluence) maxInfluence = influence;
 
         const breathMix = phase === 'move' ? 1 - influence * 0.85 : 0.35;
         const ft = t * st.floatSpeed;
@@ -1092,7 +1182,6 @@ export function initMouseInteraction(section) {
         let letterBlur = 0;
         let amp = 0;
 
-        // ── MOVE: explore type ──
         if (phase === 'move') {
           amp = influence * intensity;
           ty = breathY + EFFECT.y * amp * st.floatAmp;
@@ -1139,7 +1228,6 @@ export function initMouseInteraction(section) {
           }
         }
 
-        // ── CLICK: quiet rest while waiting ──
         if (phase === 'click') {
           tx = breathX * 0.4;
           ty = breathY * 0.4;
@@ -1147,25 +1235,55 @@ export function initMouseInteraction(section) {
           ts = lerp(1, breathS, 0.4);
         }
 
-        // ── HOLD: melt / stretch / distort ──
         if (phase === 'hold') {
           const melt = holding ? holdProgress * holdProgress : 0;
           const mid = i - (letters.length - 1) / 2;
+          const hdx = center.x - holdOriginX;
+          const hdy = center.y - holdOriginY;
+          const hdist = Math.hypot(hdx, hdy) || 1;
+          const hx = hdx / hdist;
+          const hy = hdy / hdist;
+          const local =
+            holding
+              ? smoothstep(1 - hdist / (influenceRadius * 1.35))
+              : 0;
+          const strength = melt * (0.35 + local * 0.85);
 
-          tx = breathX * (1 - melt * 0.7);
-          ty = breathY * (1 - melt) + melt * (22 + Math.abs(mid) * 6);
-          tr = breathR + melt * mid * 7;
-          ts = lerp(breathS, 1.05 + melt * 0.55, melt);
-          sk = melt * 16 * (i % 2 === 0 ? 1 : -1);
-          weight = lerp(EFFECT.restWeight, 180, melt);
-          stretch = lerp(EFFECT.restStretch, 1.35, melt);
-          track = melt * 0.08;
-          opsz = lerp(EFFECT.restOpsz, EFFECT.opsz, melt);
-          letterBlur = melt * 0.8;
-          amp = melt;
+          // Direction of hold vs word center picks a melt personality
+          const wordRectX = centers.length
+            ? centers.reduce((s, c) => s + c.x, 0) / centers.length
+            : holdOriginX;
+          const wordRectY = centers.length
+            ? centers.reduce((s, c) => s + c.y, 0) / centers.length
+            : holdOriginY;
+          const ox = clamp((holdOriginX - wordRectX) / 180, -1, 1);
+          const oy = clamp((holdOriginY - wordRectY) / 100, -1, 1);
+
+          tx = breathX * (1 - strength * 0.7) + hx * 10 * strength;
+          // Pull away from press, with gravity bias from press height
+          ty =
+            breathY * (1 - strength) +
+            strength * (14 + local * 28) * (oy < -0.2 ? 1.35 : oy > 0.25 ? 0.55 : 1) +
+            hy * 8 * strength;
+          tr =
+            breathR +
+            strength * (mid * 5 + hx * 14 + ox * 10);
+          ts = lerp(breathS, 1.02 + strength * (0.35 + local * 0.4), strength);
+          sk =
+            strength *
+            (12 * (i % 2 === 0 ? 1 : -1) + ox * 10 + hx * 8);
+          weight = lerp(EFFECT.restWeight, lerp(220, 140, local), strength);
+          stretch = lerp(
+            EFFECT.restStretch,
+            1.15 + local * 0.35 + Math.abs(ox) * 0.12,
+            strength
+          );
+          track = strength * (0.04 + local * 0.08);
+          opsz = lerp(EFFECT.restOpsz, EFFECT.opsz, strength);
+          letterBlur = strength * (0.4 + local * 0.7);
+          amp = strength;
         }
 
-        // ── DRAG: weight, elastic, inertia ──
         if (phase === 'drag') {
           if (dragging) {
             const pullX = (mouseX - dragStartX) / st.mass;
@@ -1179,8 +1297,17 @@ export function initMouseInteraction(section) {
             ts = 1 + Math.min(0.35, Math.hypot(pullX, pullY) * 0.0012);
             sk = pointer.vx * 0.35 * st.inertia;
             stretch = 1 + clamp(Math.abs(pullX) * 0.0008, 0, 0.25);
-            weight = lerp(EFFECT.restWeight, 650, clamp(Math.hypot(pullX, pullY) / 280, 0, 1));
+            weight = lerp(
+              EFFECT.restWeight,
+              650,
+              clamp(Math.hypot(pullX, pullY) / 280, 0, 1)
+            );
             track = clamp(Math.hypot(pullX, pullY) * 0.00015, 0, 0.1);
+            opsz = lerp(
+              EFFECT.restOpsz,
+              EFFECT.opsz,
+              clamp(Math.hypot(pullX, pullY) / 220, 0, 1)
+            );
             amp = clamp(Math.hypot(pullX, pullY) / 220, 0, 1);
           } else {
             tx = breathX * 0.5;
@@ -1205,22 +1332,13 @@ export function initMouseInteraction(section) {
         springStep(st);
         paintLetter(el, st, amp);
       });
-
-      cursorNear = maxInfluence;
-    } else if (
-      !reducedMotion &&
-      !transitioning &&
-      (phase === 'release' || phase === 'wow')
-    ) {
-      // Still tick springs lightly if needed — mostly GSAP driven
     }
 
     rafId = requestAnimationFrame(applyEffects);
   }
 
   function startLoop() {
-    if (active) return;
-    if (reducedMotion) return;
+    if (active || reducedMotion) return;
     active = true;
     rafId = requestAnimationFrame(applyEffects);
   }
@@ -1233,337 +1351,145 @@ export function initMouseInteraction(section) {
     }
   }
 
-  function resetLetterStyles() {
-    letters.forEach((el, i) => {
-      const st = letterState[i];
-      if (st) {
-        st.tx = st.ty = st.tr = st.skew = 0;
-        st.dtx = st.dty = st.dtr = st.dsk = 0;
-        st.x = st.y = st.r = st.sk = 0;
-        st.vx = st.vy = st.vr = st.vs = st.vsk = st.vstretch = 0;
-        st.ts = st.dts = st.s = 1;
-        st.stretch = st.dstretch = st.stretchCur = EFFECT.restStretch;
-        st.track = st.dtrack = EFFECT.restTracking;
-        st.opsz = st.dopsz = EFFECT.restOpsz;
-        st.blur = st.dblur = 0;
-        st.weight = st.dweight = EFFECT.restWeight;
-      }
-      el.style.transform = '';
-      el.style.fontWeight = String(EFFECT.restWeight);
-      el.style.fontVariationSettings = '';
-      el.style.letterSpacing = '';
-      el.style.textShadow = 'none';
-      el.style.filter = '';
-      el.style.opacity = '';
-      el.style.webkitTextStroke = '';
-      el.style.color = '';
-      el.style.removeProperty('--outline-mix');
-      el.classList.remove('is-outline', 'is-soft-outline');
-    });
-    wordEl.style.filter = 'none';
-    wordEl.style.letterSpacing = '';
-    wordEl.classList.remove('is-exploding');
-    blurAmount = 0;
-    hasPointer = false;
-    holding = false;
-    dragging = false;
-    cursorNear = 0;
-    cursorPressed = false;
-  }
-
-  // ── Opening ─────────────────────────────────────────────────────────────
-
-  function startIntro() {
-    phase = 'intro';
-    updateJourneyProgress();
-
-    const hold = reducedMotion ? 0.2 : EXPERIENCE.openingHoldMs / 1000;
-    const tl = gsap.timeline({ onComplete: () => enterMove() });
-
-    if (openingEl) {
-      gsap.set(openingEl, { autoAlpha: 1 });
-      tl.to(openingEl, {
-        autoAlpha: 0,
-        y: -8,
-        duration: 0.65,
-        ease: ANIMATION.ease.smooth,
-        delay: hold,
-      });
-    } else {
-      tl.to({}, { duration: hold * 0.3 });
-    }
-
-    const staggerEach = 0.065;
-    const from =
-      SESSION.staggerFrom === 'start'
-        ? SESSION.waveDir === 1
-          ? 'start'
-          : 'end'
-        : SESSION.staggerFrom === 'end'
-          ? SESSION.waveDir === 1
-            ? 'end'
-            : 'start'
-          : SESSION.staggerFrom;
-
-    tl.to(
-      letters,
-      {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: ANIMATION.duration.slow,
-        ease: ANIMATION.ease.expo,
-        stagger: { each: staggerEach, from },
-        onComplete: () => {
-          gsap.set(letters, { clearProps: 'transform' });
-        },
-      },
-      openingEl ? '-=0.25' : 0
-    );
-
-    if (label) {
-      label.textContent = EXPERIENCE.stages.move;
-      label.classList.add('is-stage');
-      tl.to(
-        label,
-        {
-          opacity: 0.92,
-          y: 0,
-          duration: ANIMATION.duration.normal,
-          ease: ANIMATION.ease.out,
-        },
-        '-=0.5'
-      );
-    }
-  }
-
-  // ── Replay ──────────────────────────────────────────────────────────────
-
-  function replay() {
-    if (phase !== 'ending') return;
-    sound.pop();
-
-    moveTravel = 0;
-    moveTracking = false;
-    clickDone = false;
-    holding = false;
-    holdProgress = 0;
-    holdComplete = false;
-    dragging = false;
-    dragTravel = 0;
-    dragReady = false;
-    wowDone = false;
-    transitioning = false;
-    pointerIsDown = false;
-
-    if (ending) {
-      ending.setAttribute('aria-hidden', 'true');
-      gsap.to(ending, {
-        autoAlpha: 0,
-        y: -8,
-        duration: 0.4,
-        ease: ANIMATION.ease.soft,
-        onComplete: () => gsap.set(ending, { pointerEvents: 'none', y: 0 }),
-      });
-    }
-
-    if (replayBtn) {
-      replayBtn.hidden = true;
-      replayBtn.classList.remove('is-visible');
-      gsap.set(replayBtn, { clearProps: 'opacity,visibility,transform' });
-    }
-
-    hideContinueScrollHint();
-
-    if (openingText && openingEl) {
-      const lines = [
-        'Move the Type',
-        'Typography in Motion',
-        'Every Letter Reacts',
-      ];
-      openingText.textContent = lines[Math.floor(Math.random() * lines.length)];
-      gsap.set(openingEl, { autoAlpha: 1, y: 0 });
-    }
-
-    letters = buildLetters(wordEl, WORD);
-    syncLetterStateArray();
-    wordEl.setAttribute('aria-label', WORD);
-    resetLetterStyles();
-
-    gsap.set(wordEl, { opacity: 1, scale: 1, filter: 'none', y: 0 });
-    gsap.set(letters, { opacity: 0, y: 28, scale: 0.96 });
-    if (label) gsap.set(label, { opacity: 0, y: 10, xPercent: -50 });
-
-    const hold = reducedMotion ? 0.15 : 0.9;
-    const tl = gsap.timeline({ onComplete: () => enterMove() });
-
-    if (openingEl) {
-      tl.to(openingEl, {
-        autoAlpha: 0,
-        y: -6,
-        duration: 0.5,
-        ease: ANIMATION.ease.smooth,
-        delay: hold,
-      });
-    }
-
-    tl.to(
-      letters,
-      {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: ANIMATION.duration.slow,
-        ease: ANIMATION.ease.expo,
-        stagger: 0.055,
-        onComplete: () => {
-          gsap.set(letters, { clearProps: 'transform' });
-        },
-      },
-      openingEl ? '-=0.2' : 0
-    );
-
-    if (label) {
-      label.textContent = EXPERIENCE.stages.move;
-      label.classList.add('is-stage');
-      tl.to(
-        label,
-        {
-          opacity: 0.92,
-          y: 0,
-          duration: ANIMATION.duration.normal,
-          ease: ANIMATION.ease.out,
-        },
-        '-=0.45'
-      );
-    }
-  }
-
-  // ── Pointer handlers ────────────────────────────────────────────────────
-
-  const onPointerMove = (e) => {
-    if (
-      phase !== 'move' &&
-      phase !== 'click' &&
-      phase !== 'hold' &&
-      phase !== 'drag'
-    ) {
-      return;
-    }
-    hasPointer = true;
-
-    // Drag starts when moved enough while down
-    if (phase === 'drag' && pointerIsDown && !dragging && !transitioning) {
-      const moved = Math.hypot(e.clientX - pointerDownX, e.clientY - pointerDownY);
-      if (moved > 10) {
-        dragging = true;
-        cursorPressed = true;
-        dragStartX = e.clientX;
-        dragStartY = e.clientY;
-        dragStartedAt = performance.now();
-        lastMoveX = e.clientX;
-        lastMoveY = e.clientY;
-        dragTravel = 0;
-        sound.soft();
-      }
-    }
-  };
-
-  const onPointerLeave = () => {
-    hasPointer = false;
-    if (phase === 'hold' && holding) {
-      // Cancel incomplete hold — restore
-      holding = false;
-      cursorPressed = false;
-      holdProgress = 0;
-    }
-    if (phase === 'drag' && dragging) {
-      // Keep inertia via springs returning toward breath
-      if (dragReady) {
-        enterRelease();
-      } else {
-        dragging = false;
-        cursorPressed = false;
-        pointerIsDown = false;
-      }
-    }
-  };
+  // ── Pointer ─────────────────────────────────────────────────────────────
 
   const onPointerDown = (e) => {
     if (transitioning) return;
-    if (phase !== 'click' && phase !== 'hold' && phase !== 'drag') return;
-
     pointerIsDown = true;
     pointerDownX = e.clientX;
     pointerDownY = e.clientY;
-    cursorPressed = true;
 
-    if (phase === 'hold') {
+    if (phase === 'hold' && !holdComplete) {
       holding = true;
       holdStart = performance.now();
       holdProgress = 0;
-      holdComplete = false;
-      sound.soft();
+      holdReady = false;
+      releasePrompted = false;
+      holdOriginX = e.clientX;
+      holdOriginY = e.clientY;
+      refreshCenters();
+      setLabel(EXPERIENCE.stages.holding);
     }
 
     if (phase === 'drag') {
-      // Wait for move to begin drag (avoids click-as-drag)
+      dragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      dragStartedAt = performance.now();
       lastMoveX = e.clientX;
       lastMoveY = e.clientY;
+      if (!dragReady) {
+        dragTravel = Math.max(dragTravel, 0);
+        setLabel(EXPERIENCE.stages.dragging);
+      }
+      sound.soft();
     }
   };
 
   const onPointerUp = (e) => {
-    const wasHolding = holding;
+    const wasDown = pointerIsDown;
+    const ready = holdReady;
     const wasDragging = dragging;
-    const heldLongEnough = holdComplete;
-    const ready = dragReady;
-
+    const dragOk = dragReady;
     pointerIsDown = false;
-    cursorPressed = false;
 
-    if (phase === 'hold' && wasHolding) {
+    if (!wasDown || transitioning) return;
+
+    if (phase === 'click' && !clickDone) {
+      const moved = Math.hypot(e.clientX - pointerDownX, e.clientY - pointerDownY);
+      if (moved <= 12) {
+        playClickReaction(e.clientX, e.clientY);
+      }
+      return;
+    }
+
+    if (phase === 'hold' && holding) {
       holding = false;
-      if (heldLongEnough) {
-        holdComplete = false;
-        sound.soft();
-        enterDrag();
+      if (ready) {
+        completeHold();
       } else {
-        // Incomplete — soft restore via springs, stay on Hold
         holdProgress = 0;
+        holdReady = false;
+        releasePrompted = false;
+        updateJourneyProgress(0);
+        setLabel(EXPERIENCE.stages.hold);
+        settleLetters(ANIMATION.duration.hover);
       }
       return;
     }
 
     if (phase === 'drag' && wasDragging) {
       dragging = false;
-      if (ready) {
-        enterRelease();
-      }
-      return;
-    }
-
-    if (phase === 'click') {
-      const moved = Math.hypot(e.clientX - pointerDownX, e.clientY - pointerDownY);
-      if (moved <= 12) {
-        playClickReaction(e.clientX, e.clientY);
+      if (dragOk) {
+        completeDrag();
+      } else {
+        setLabel(EXPERIENCE.stages.drag);
+        settleLetters(ANIMATION.duration.hover);
       }
     }
   };
 
-  // ── Init ────────────────────────────────────────────────────────────────
+  section.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('pointerup', onPointerUp);
+  const onPointerMoveHold = (e) => {
+    if (phase === 'hold' && holding) {
+      holdOriginX = e.clientX;
+      holdOriginY = e.clientY;
+    }
+  };
+  window.addEventListener('pointermove', onPointerMoveHold, { passive: true });
+  replayBtn?.addEventListener('click', replay);
+  cleanups.push(() => {
+    section.removeEventListener('pointerdown', onPointerDown);
+    window.removeEventListener('pointerup', onPointerUp);
+    window.removeEventListener('pointermove', onPointerMoveHold);
+    replayBtn?.removeEventListener('click', replay);
+  });
 
-  gsap.set(letters, { opacity: 0, y: 36, scale: 0.94 });
-  if (label) gsap.set(label, { opacity: 0, y: 10, xPercent: -50, left: '50%' });
-  if (ending) gsap.set(ending, { autoAlpha: 0, pointerEvents: 'none' });
-  if (openingEl) gsap.set(openingEl, { autoAlpha: 1 });
-  updateJourneyProgress();
+  // ── Intro ───────────────────────────────────────────────────────────────
 
-  const entrance = ScrollTrigger.create({
+  function startIntro() {
+    if (phase !== 'intro') return;
+    const tl = gsap.timeline({
+      onComplete: () => enterMove(),
+    });
+
+    if (openingEl) {
+      gsap.set(openingEl, { opacity: 0, visibility: 'visible' });
+      tl.to(openingEl, {
+        opacity: 1,
+        duration: ANIMATION.duration.normal,
+        ease: ANIMATION.ease.out,
+      }).to(openingEl, {
+        opacity: 0,
+        duration: ANIMATION.duration.hover,
+        ease: ANIMATION.ease.soft,
+        delay: (EXPERIENCE.openingHoldMs / 1000) * 0.6,
+        onComplete: () => {
+          openingEl.style.visibility = 'hidden';
+        },
+      });
+    }
+
+    gsap.set(letters, { opacity: 0, y: 20 });
+    tl.to(
+      letters,
+      {
+        opacity: 1,
+        y: 0,
+        duration: ANIMATION.duration.slow,
+        ease: ANIMATION.ease.expo,
+        stagger: 0.04,
+      },
+      openingEl ? '-=0.1' : 0
+    );
+  }
+
+  let entrance = ScrollTrigger.create({
     trigger: section,
     start: 'top 65%',
     once: true,
-    onEnter: () => startIntro(),
+    onEnter: startIntro,
   });
 
   const visibility = ScrollTrigger.create({
@@ -1571,27 +1497,13 @@ export function initMouseInteraction(section) {
     start: 'top bottom',
     end: 'bottom top',
     onEnter: () => {
-      if (
-        phase === 'move' ||
-        phase === 'click' ||
-        phase === 'hold' ||
-        phase === 'drag'
-      ) {
-        startLoop();
-      }
+      if (phase !== 'intro') startLoop();
     },
     onEnterBack: () => {
-      if (
-        phase === 'move' ||
-        phase === 'click' ||
-        phase === 'hold' ||
-        phase === 'drag'
-      ) {
-        startLoop();
-      }
+      if (phase !== 'intro') startLoop();
     },
-    onLeave: () => stopLoop(),
-    onLeaveBack: () => stopLoop(),
+    onLeave: stopLoop,
+    onLeaveBack: stopLoop,
   });
 
   const pin = ScrollTrigger.create({
@@ -1599,61 +1511,35 @@ export function initMouseInteraction(section) {
     start: 'top top',
     end: '+=90%',
     pin: true,
-    pinSpacing: true,
     anticipatePin: 1,
-    onLeave: () => hideContinueScrollHint(),
-    onEnterBack: () => {
-      if (phase === 'ending' && replayBtn && !replayBtn.hidden) {
-        showContinueScrollHint();
-      }
-    },
   });
 
-  // Fade the continue-scroll hint as the user leaves the pinned section
   const hintFade = ScrollTrigger.create({
     trigger: section,
     start: 'top top',
     end: '+=90%',
-    scrub: true,
-    onUpdate: (self) => {
-      if (phase !== 'ending' || !scrollHint?.classList.contains('is-visible')) return;
-      if (self.progress > 0.85) {
-        gsap.set(scrollHint, { opacity: 1 - (self.progress - 0.85) / 0.15 });
-      }
+    onLeave: () => hideContinueHint(),
+    onEnterBack: () => {
+      if (phase === 'complete') showContinueHint('Scroll');
     },
   });
 
-  section.addEventListener('pointermove', onPointerMove, { passive: true });
-  section.addEventListener('pointerleave', onPointerLeave);
-  section.addEventListener('pointerdown', onPointerDown, { passive: true });
-  section.addEventListener('pointerup', onPointerUp, { passive: true });
-  section.addEventListener('pointercancel', onPointerUp, { passive: true });
-  replayBtn?.addEventListener('click', replay);
+  const onResize = () => refreshCenters();
+  window.addEventListener('resize', onResize, { passive: true });
 
-  const rect = section.getBoundingClientRect();
-  if (rect.top < window.innerHeight * 0.65 && rect.bottom > 0) {
-    startIntro();
-  }
+  resetMouseInteractionFn = () => {
+    resetToInitial();
+    rearmEntrance();
+  };
 
   cleanups.push(() => {
-    section.removeEventListener('pointermove', onPointerMove);
-    section.removeEventListener('pointerleave', onPointerLeave);
-    section.removeEventListener('pointerdown', onPointerDown);
-    section.removeEventListener('pointerup', onPointerUp);
-    section.removeEventListener('pointercancel', onPointerUp);
-    replayBtn?.removeEventListener('click', replay);
-    hideContinueScrollHint();
     stopLoop();
     entrance.kill();
     visibility.kill();
     pin.kill();
     hintFade.kill();
-    gsap.killTweensOf(letters);
-    gsap.killTweensOf(wordEl);
-    if (ending) gsap.killTweensOf(ending);
-    if (label) gsap.killTweensOf(label);
-    if (openingEl) gsap.killTweensOf(openingEl);
-    cursorEl?.remove();
+    window.removeEventListener('resize', onResize);
+    if (resetMouseInteractionFn) resetMouseInteractionFn = null;
   });
 
   return () => cleanups.forEach((fn) => fn());

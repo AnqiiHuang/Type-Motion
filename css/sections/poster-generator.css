@@ -15,11 +15,15 @@
   justify-content: center;
   width: 100%;
   min-height: var(--section-min-height-svh);
-  padding: calc(var(--header-height) + var(--space-sm)) var(--space-md) var(--space-lg);
-  gap: var(--space-md);
+  max-height: var(--section-min-height-svh);
+  /* Extra bottom room so actions clear the section Scroll cue */
+  padding: calc(var(--header-height) + 0.5rem) var(--space-md) calc(var(--space-md) + 4.75rem);
+  gap: var(--space-sm);
+  overflow: hidden;
 }
 
 .poster__label {
+  flex: 0 0 auto;
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.2em;
@@ -30,24 +34,34 @@
 
 .poster__frame {
   position: relative;
-  width: min(360px, 78vw);
+  /* Leave room for header + label + actions inside the snapped viewport */
+  width: min(360px, 72vw, calc((100svh - var(--header-height) - 12.5rem) * 0.72));
   aspect-ratio: 3 / 4;
+  flex: 0 1 auto;
   background: var(--color-bg-alt);
   box-shadow:
     0 1px 0 rgba(0, 0, 0, 0.04),
     0 24px 48px rgba(0, 0, 0, 0.06);
   opacity: 0;
   overflow: hidden;
+  cursor: text;
 }
 
 .poster__canvas {
   display: block;
   width: 100%;
   height: 100%;
+  cursor: text;
+}
+
+.poster__frame.is-editing {
+  outline: 1px solid color-mix(in srgb, var(--color-text) 28%, transparent);
+  outline-offset: 4px;
 }
 
 .poster__actions {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
@@ -78,13 +92,13 @@
   }
 
   .poster__frame {
-    width: min(300px, 82vw);
+    width: min(320px, 70vw, calc((100svh - var(--header-height) - 13rem) * 0.72));
   }
 }
 
 @media (max-width: 480px) {
   .poster__frame {
-    width: min(260px, 86vw);
+    width: min(280px, 68vw, calc((100svh - var(--header-height) - 13.5rem) * 0.72));
   }
 
   .poster__actions {

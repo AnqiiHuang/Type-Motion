@@ -1,12 +1,18 @@
 /**
  * Section 3 — Variable Font Playground
  *
- * Left: Weight / Width / Spacing / Rotation sliders
- * Right: live "HELLO" preview driven by variable font axes
+ * Primary: hover near the sample → axes respond (weight / width / scale).
+ * Secondary: sliders for precise control.
  */
 
-import { ANIMATION } from '../config.js';
+import { ANIMATION, EXPERIENCE } from '../config.js';
 import { prefersReducedMotion } from '../utils/animation.js';
+import { setCursor, resetCursor } from '../utils/cursor.js';
+import {
+  setFeedbackLabel,
+  markStageComplete,
+  wait,
+} from '../utils/feedback.js';
 
 /** Slider definitions — maps to visual / font axes */
 const SLIDERS = {
@@ -45,7 +51,6 @@ const SLIDERS = {
 };
 
 /**
- * Initialize Variable Font Playground
  * @param {HTMLElement} section
  * @returns {Function} cleanup
  */
@@ -55,15 +60,19 @@ export function initFontPlayground(section) {
   const preview = section.querySelector('.playground__preview');
   const inputs = section.querySelectorAll('[data-playground-slider]');
   const valueEls = section.querySelectorAll('[data-playground-value]');
+  const cue = section.querySelector('[data-section-cue]') || section.querySelector('.playground__eyebrow');
 
   if (!sample || !inputs.length) return () => {};
 
   const reducedMotion = prefersReducedMotion();
-  const duration = reducedMotion ? 0.01 : ANIMATION.duration.fast;
+  const duration = reducedMotion ? 0.01 : ANIMATION.duration.hover;
   const ease = ANIMATION.ease.out;
   const cleanups = [];
+  let completed = false;
+  let hoverTravel = 0;
+  let lastX = 0;
+  let lastY = 0;
 
-  // Live state — lerped via GSAP for smoothness
   const state = {
     weight: SLIDERS.weight.default,
     width: SLIDERS.width.default,
@@ -71,28 +80,23 @@ export function initFontPlayground(section) {
     rotation: SLIDERS.rotation.default,
   };
 
-  // Proxy object so gsap can tween numeric props
   const proxy = { ...state };
+  const hoverBoost = { weight: 0, width: 0, scale: 1 };
 
   function applyVisuals() {
-    sample.style.fontVariationSettings =
-      `'wght' ${proxy.weight}, 'wdth' ${proxy.width}`;
-    sample.style.fontWeight = String(Math.round(proxy.weight));
-    sample.style.fontStretch = `${proxy.width}%`;
+    const w = proxy.weight + hoverBoost.weight;
+    const wd = proxy.width + hoverBoost.width;
+    sample.style.fontVariationSettings = `'wght' ${w}, 'wdth' ${wd}`;
+    sample.style.fontWeight = String(Math.round(w));
+    sample.style.fontStretch = `${wd}%`;
     sample.style.letterSpacing = `${proxy.spacing}em`;
-    gsap.set(sample, { rotation: proxy.rotation });
+    gsap.set(sample, { rotation: proxy.rotation, scale: hoverBoost.scale });
   }
 
-  // Initial paint
   applyVisuals();
 
-  /**
-   * Smoothly tween proxy → target, updating sample every frame
-   * @param {Partial<typeof state>} targets
-   */
   function animateTo(targets) {
     Object.assign(state, targets);
-
     gsap.to(proxy, {
       ...targets,
       duration,
@@ -102,7 +106,6 @@ export function initFontPlayground(section) {
     });
   }
 
-  // Sync value labels
   const valueMap = {};
   valueEls.forEach((el) => {
     valueMap[el.dataset.playgroundValue] = el;
@@ -114,7 +117,6 @@ export function initFontPlayground(section) {
     if (el && def) el.textContent = def.format(value);
   }
 
-  // Wire sliders
   inputs.forEach((input) => {
     const key = input.dataset.playgroundSlider;
     const def = SLIDERS[key];
@@ -135,6 +137,75 @@ export function initFontPlayground(section) {
     input.addEventListener('input', onInput);
     cleanups.push(() => input.removeEventListener('input', onInput));
   });
+
+  // ── Primary: hover response on sample ───────────────────────────────────
+  const onPreviewMove = (e) => {
+    if (reducedMotion) return;
+    const rect = sample.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = (e.clientX - cx) / (rect.width * 0.5);
+    const dy = (e.clientY - cy) / (rect.height * 0.5);
+    const dist = Math.min(1, Math.hypot(dx, dy));
+    const proximity = 1 - dist;
+
+    if (lastX || lastY) {
+      hoverTravel += Math.hypot(e.clientX - lastX, e.clientY - lastY);
+    }
+    lastX = e.clientX;
+    lastY = e.clientY;
+
+    gsap.to(hoverBoost, {
+      weight: proximity * 280,
+      width: proximity * 28 * (dx >= 0 ? 1 : -1),
+      scale: 1 + proximity * 0.08,
+      duration: ANIMATION.duration.hover,
+      ease: ANIMATION.ease.soft,
+      overwrite: 'auto',
+      onUpdate: applyVisuals,
+    });
+
+    setCursor('hover');
+
+    if (!completed && hoverTravel > 180 && proximity > 0.2) {
+      completeStage();
+    }
+  };
+
+  const onPreviewLeave = () => {
+    lastX = 0;
+    lastY = 0;
+    resetCursor();
+    gsap.to(hoverBoost, {
+      weight: 0,
+      width: 0,
+      scale: 1,
+      duration: ANIMATION.duration.reset,
+      ease: ANIMATION.ease.out,
+      overwrite: 'auto',
+      onUpdate: applyVisuals,
+    });
+  };
+
+  async function completeStage() {
+    if (completed) return;
+    completed = true;
+    markStageComplete('font-playground');
+    if (cue) {
+      await setFeedbackLabel(cue, EXPERIENCE.feedback.great, { stage: false });
+      await wait(EXPERIENCE.feedbackHoldMs);
+      await setFeedbackLabel(cue, 'Variable Font', { stage: true });
+    }
+  }
+
+  if (preview) {
+    preview.addEventListener('pointermove', onPreviewMove, { passive: true });
+    preview.addEventListener('pointerleave', onPreviewLeave);
+    cleanups.push(() => {
+      preview.removeEventListener('pointermove', onPreviewMove);
+      preview.removeEventListener('pointerleave', onPreviewLeave);
+    });
+  }
 
   // ── Entrance ────────────────────────────────────────────────────────────
   const entrance = ScrollTrigger.create({
@@ -166,13 +237,13 @@ export function initFontPlayground(section) {
     },
   });
 
-  // Prep entrance offsets
   if (controls) gsap.set(controls, { y: 20 });
   if (preview) gsap.set(preview, { opacity: 0 });
 
   cleanups.push(() => {
     entrance.kill();
     gsap.killTweensOf(proxy);
+    gsap.killTweensOf(hoverBoost);
     gsap.killTweensOf(sample);
   });
 

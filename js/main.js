@@ -10,6 +10,9 @@ import { initThemeSystem } from './theme.js';
 import { initAudio } from './utils/audio.js';
 import { initPointer } from './utils/pointer.js';
 import { initTrail } from './utils/trail.js';
+import { initCursorSystem } from './utils/cursor.js';
+import { initProgressIndicator } from './utils/progress.js';
+import { initSectionSnap } from './utils/snap.js';
 import { initHero } from './sections/hero.js';
 import { initMouseInteraction } from './sections/mouse-interaction.js';
 import { initFontPlayground } from './sections/font-playground.js';
@@ -40,12 +43,12 @@ function init() {
   }
   window.scrollTo(0, 0);
 
-  // Random theme from the five on every load; header bolds the active one
   const cleanups = [
     initThemeSystem(),
     initPointer(),
     initTrail(),
     initAudio(),
+    initCursorSystem(),
   ];
 
   SECTIONS.forEach(({ selector, init: initSection, eager }) => {
@@ -60,11 +63,16 @@ function init() {
     }
   });
 
+  cleanups.push(initProgressIndicator());
+  // After section pins exist so snap points include pin spacers
+  cleanups.push(initSectionSnap());
+
   // Refresh ScrollTrigger after fonts load; keep scroll pinned at top
   document.fonts.ready.then(() => {
     window.scrollTo(0, 0);
     ScrollTrigger.refresh();
   });
+
 
   return () => cleanups.forEach((fn) => fn && fn());
 }

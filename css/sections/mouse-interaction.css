@@ -136,7 +136,7 @@
   pointer-events: none;
   z-index: 3;
   will-change: transform;
-  transition: transform 0.8s var(--ease-out-expo);
+  transition: transform var(--duration-scroll) var(--ease-out-expo);
 }
 
 .mouse__content {
@@ -173,6 +173,14 @@
   bottom: calc(50% + clamp(3.5rem, 12vw, 7.5rem));
   font-size: 0.75rem;
   letter-spacing: 0.32em;
+  color: var(--color-text);
+}
+
+.mouse__label.is-feedback {
+  top: auto;
+  bottom: calc(50% + clamp(3.5rem, 12vw, 7.5rem));
+  font-size: 0.75rem;
+  letter-spacing: 0.28em;
   color: var(--color-text);
 }
 

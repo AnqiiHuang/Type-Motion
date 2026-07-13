@@ -1,14 +1,19 @@
 /**
  * Section 5 — Typography Physics
  *
- * DROP → letters become Matter.js bodies (gravity, collide, bounce).
- * RESET → ease back to original layout.
+ * Drop / Reset runs a Matter.js letter collision simulation.
  */
 
-import { ANIMATION } from '../config.js';
+import { ANIMATION, EXPERIENCE } from '../config.js';
 import { prefersReducedMotion } from '../utils/animation.js';
+import {
+  setFeedbackLabel,
+  markStageComplete,
+  wait,
+} from '../utils/feedback.js';
 
 const WORD = 'PHYSICS';
+const LABEL = 'Drop to collide';
 
 const {
   Engine,
@@ -18,12 +23,6 @@ const {
   Body,
 } = Matter;
 
-/**
- * Split word into letter spans
- * @param {HTMLElement} container
- * @param {string} word
- * @returns {HTMLElement[]}
- */
 function buildLetters(container, word) {
   container.textContent = '';
   return [...word].map((char) => {
@@ -36,10 +35,6 @@ function buildLetters(container, word) {
   });
 }
 
-/**
- * Parse translate3d + rotate from a transform string
- * @param {string} transform
- */
 function parseTransform(transform) {
   const translate = /translate3d\(([-\d.]+)px,\s*([-\d.]+)px/.exec(transform || '');
   const rotate = /rotate\(([-\d.]+)deg\)/.exec(transform || '');
@@ -51,7 +46,6 @@ function parseTransform(transform) {
 }
 
 /**
- * Initialize Typography Physics section
  * @param {HTMLElement} section
  * @returns {Function} cleanup
  */
@@ -70,17 +64,19 @@ export function initTypographyPhysics(section) {
 
   /** @type {'idle' | 'dropping' | 'resetting'} */
   let mode = 'idle';
-  /** @type {Matter.Engine | null} */
   let engine = null;
-  /** @type {Matter.Runner | null} */
   let runner = null;
   /** @type {Array<{ body: Matter.Body, el: HTMLElement, w: number, h: number }>} */
   let letterBodies = [];
   let rafId = null;
   let syncing = false;
-
   /** @type {Array<{ x: number, y: number, w: number, h: number }>} */
   let restLayout = [];
+  let completed = false;
+
+  if (label) {
+    label.textContent = LABEL;
+  }
 
   function measureRestLayout() {
     const stageRect = stage.getBoundingClientRect();
@@ -103,7 +99,10 @@ export function initTypographyPhysics(section) {
     const thickness = 80;
 
     engine = Engine.create({
-      gravity: { x: 0, y: reducedMotion ? 0.35 : 1 },
+      gravity: {
+        x: 0,
+        y: reducedMotion ? 0.35 : 1,
+      },
     });
 
     const ground = Bodies.rectangle(w / 2, h + thickness / 2 - 2, w + 200, thickness, {
@@ -230,6 +229,7 @@ export function initTypographyPhysics(section) {
     mode = 'dropping';
     button.textContent = 'Reset';
     button.setAttribute('aria-pressed', 'true');
+    maybeComplete();
   }
 
   function reset() {
@@ -238,7 +238,7 @@ export function initTypographyPhysics(section) {
     mode = 'resetting';
     destroyWorld();
 
-    let completed = 0;
+    let completedCount = 0;
 
     letters.forEach((el, i) => {
       const layout = restLayout[i];
@@ -251,7 +251,7 @@ export function initTypographyPhysics(section) {
         x: targetX,
         y: targetY,
         r: 0,
-        duration: ANIMATION.duration.slow,
+        duration: ANIMATION.duration.reset,
         ease: ANIMATION.ease.expo,
         delay: i * 0.03,
         onUpdate: () => {
@@ -259,8 +259,8 @@ export function initTypographyPhysics(section) {
             `translate3d(${proxy.x}px, ${proxy.y}px, 0) rotate(${proxy.r}deg)`;
         },
         onComplete: () => {
-          completed += 1;
-          if (completed === letters.length) {
+          completedCount += 1;
+          if (completedCount === letters.length) {
             restoreFlexLayout();
           }
         },
@@ -273,10 +273,22 @@ export function initTypographyPhysics(section) {
     else if (mode === 'dropping') reset();
   }
 
-  button.addEventListener('click', toggle);
-  cleanups.push(() => button.removeEventListener('click', toggle));
+  async function maybeComplete() {
+    if (completed || mode !== 'dropping') return;
+    completed = true;
+    markStageComplete('typography-physics');
+    if (label) {
+      await setFeedbackLabel(label, EXPERIENCE.feedback.perfect, { stage: false });
+      await wait(EXPERIENCE.feedbackHoldMs);
+      await setFeedbackLabel(label, LABEL, { stage: true });
+    }
+  }
 
-  // Pause simulation when off-screen
+  button.addEventListener('click', toggle);
+  cleanups.push(() => {
+    button.removeEventListener('click', toggle);
+  });
+
   const visibility = ScrollTrigger.create({
     trigger: section,
     start: 'top bottom',
@@ -303,7 +315,6 @@ export function initTypographyPhysics(section) {
     },
   });
 
-  // Resize mid-drop → hard reset to keep bounds correct
   let resizeTimer = null;
   const onResize = () => {
     clearTimeout(resizeTimer);
@@ -319,7 +330,6 @@ export function initTypographyPhysics(section) {
     clearTimeout(resizeTimer);
   });
 
-  // ── Entrance ────────────────────────────────────────────────────────────
   gsap.set(letters, { opacity: 0, y: 24 });
   if (label) gsap.set(label, { opacity: 0, y: 8 });
   if (actions) gsap.set(actions, { opacity: 0, y: 12 });

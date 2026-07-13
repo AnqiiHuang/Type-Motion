@@ -75,7 +75,7 @@
       class="section section--mouse"
       data-section="mouse-interaction"
       data-phase="intro"
-      aria-label="Interactive Typography Journey"
+      aria-label="Interactive Typography Tutorial"
     >
       <div class="mouse__progress" aria-hidden="true"></div>
       <div class="mouse__content">
@@ -84,7 +84,6 @@
         </p>
         <p class="mouse__label" data-mouse-label aria-live="polite"></p>
         <h2 class="mouse__word" data-mouse-word aria-label="Design">DESIGN</h2>
-
         <div class="mouse__ending" data-mouse-ending aria-hidden="true">
           <p class="mouse__ending-title" data-ending-title>Typography Never Stands Still.</p>
           <button type="button" class="mouse__replay" data-mouse-replay hidden>Replay</button>
@@ -101,8 +100,9 @@
     >
       <div class="playground__layout">
         <aside class="playground__controls">
-          <p class="playground__eyebrow">Variable Font</p>
+          <p class="playground__eyebrow" data-section-cue>Variable Font</p>
           <h2 class="playground__heading">Playground</h2>
+          <p class="playground__hint">Hover the type · Fine-tune with sliders</p>
 
           <div class="playground__sliders">
             <label class="playground__slider">
@@ -165,7 +165,7 @@
       aria-label="Wave Typography"
     >
       <div class="wave__content">
-        <p class="wave__label">Hover to intensify · Click to calm</p>
+        <p class="wave__label">Drag to pull the current · Click to calm</p>
         <h2 class="wave__word" data-wave-word aria-label="Brand Design">BRAND DESIGN</h2>
       </div>
     </section>
@@ -178,7 +178,7 @@
       aria-label="Typography Physics"
     >
       <div class="physics__content">
-        <p class="physics__label">Gravity · Collision · Bounce</p>
+        <p class="physics__label">Drop to collide</p>
 
         <div class="physics__stage" data-physics-stage>
           <h2 class="physics__word" data-physics-word aria-label="Physics">PHYSICS</h2>
@@ -203,7 +203,7 @@
       aria-label="Random Poster Generator"
     >
       <div class="poster__content">
-        <p class="poster__label">Typography Poster</p>
+        <p class="poster__label">Click the poster to edit · Type to set the title</p>
 
         <div class="poster__frame" aria-live="polite">
           <canvas
@@ -286,7 +286,7 @@
       </div>
     </section>
 
-    <!-- Section 8: About -->
+    <!-- Section 8: About / Ending -->
     <section
       id="about"
       class="section section--about"
@@ -298,12 +298,14 @@
         <h2 class="about__title">Type is Alive</h2>
         <span class="about__rule" aria-hidden="true"></span>
         <div class="about__body">
-          <p>Typography is not just for reading.</p>
-          <p>It can also become an interactive experience.</p>
+          <p>Type Motion explores typography through interaction.</p>
+          <p>Every gesture transforms a letter into a new visual experience.</p>
+          <p>Rather than simply reading typography, users discover it through movement, curiosity and play.</p>
         </div>
         <footer class="about__footer">
           <p class="about__credit">Type Motion</p>
-          <p class="about__meta" data-about-ending>Typography Never Stands Still.</p>
+          <p class="about__meta">You changed typography. Typography changed you.</p>
+          <button type="button" class="about__restart" data-about-restart>Back to top</button>
         </footer>
       </div>
     </section>

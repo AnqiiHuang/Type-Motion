@@ -5,6 +5,8 @@
  * Each page load picks one of the five themes at random.
  */
 
+import { ANIMATION } from './config.js';
+
 export const THEMES = [
   {
     id: 'minimal',
@@ -134,14 +136,14 @@ export function setTheme(themeId, options = {}) {
   const tl = gsap.timeline();
   tl.to(veil, {
     opacity: 0.55,
-    duration: 0.22,
-    ease: 'power2.inOut',
+    duration: ANIMATION.duration.hover,
+    ease: ANIMATION.ease.smooth,
   })
     .add(() => apply())
     .to(veil, {
       opacity: 0,
-      duration: 0.45,
-      ease: 'power2.out',
+      duration: ANIMATION.duration.scroll,
+      ease: ANIMATION.ease.soft,
     });
 
   return theme.id;

@@ -140,6 +140,13 @@
   transition: opacity var(--duration-normal) var(--ease-out-expo);
 }
 
+/* Per-section cue — same look, pinned to the panel bottom while snapped */
+.scroll-hint--section {
+  position: absolute;
+  z-index: 12;
+  bottom: var(--space-md);
+}
+
 .scroll-hint.is-visible {
   opacity: 1;
 }
@@ -150,6 +157,148 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--color-text-muted);
+}
+
+/* Progress indicator — left edge, post-tutorial chapters */
+.progress-nav {
+  position: fixed;
+  top: 50%;
+  left: var(--space-sm);
+  z-index: 95;
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-scroll) var(--ease-out-expo);
+}
+
+.progress-nav.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.progress-nav__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+}
+
+.progress-nav__btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0.15rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  cursor: pointer;
+  font-family: var(--font-primary);
+  color: var(--color-text-muted);
+  transition:
+    color var(--duration-hover) var(--ease-out-expo),
+    opacity var(--duration-hover) var(--ease-out-expo);
+  opacity: 0.45;
+}
+
+.progress-nav__btn:hover,
+.progress-nav__btn.is-active {
+  color: var(--color-text);
+  opacity: 1;
+}
+
+.progress-nav__num {
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-nav__name {
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition:
+    max-width var(--duration-click) var(--ease-out-expo),
+    opacity var(--duration-click) var(--ease-out-expo);
+}
+
+.progress-nav__btn.is-active .progress-nav__name,
+.progress-nav__btn:hover .progress-nav__name,
+.progress-nav__btn:focus-visible .progress-nav__name {
+  max-width: 6rem;
+  opacity: 0.85;
+}
+
+.progress-nav__btn:focus-visible {
+  outline: 1px solid var(--color-text);
+  outline-offset: 3px;
+}
+
+/* Cursor feedback — data-cursor on <html> */
+html[data-cursor='pointer'],
+html[data-cursor='pointer'] body {
+  cursor: pointer;
+}
+
+html[data-cursor='grab'],
+html[data-cursor='grab'] body {
+  cursor: grab;
+}
+
+html[data-cursor='grabbing'],
+html[data-cursor='grabbing'] body {
+  cursor: grabbing;
+}
+
+html[data-cursor='text'],
+html[data-cursor='text'] body {
+  cursor: text;
+}
+
+.cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 200;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border: 1px solid var(--color-text-muted);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+  transition:
+    width var(--duration-hover) var(--ease-out-expo),
+    height var(--duration-hover) var(--ease-out-expo),
+    margin var(--duration-hover) var(--ease-out-expo),
+    opacity var(--duration-hover) var(--ease-out-expo);
+}
+
+.cursor-ring.is-visible {
+  opacity: 0.5;
+}
+
+.cursor-ring.is-hover {
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  opacity: 0.55;
+}
+
+.cursor-ring.is-grabbing {
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  opacity: 0.4;
 }
 
 .scroll-hint__line {
@@ -185,6 +334,18 @@
 
   .scroll-hint {
     bottom: var(--space-sm);
+  }
+
+  .scroll-hint--section {
+    bottom: var(--space-sm);
+  }
+
+  .progress-nav {
+    left: var(--space-xs, 0.5rem);
+  }
+
+  .progress-nav__name {
+    display: none;
   }
 }
 
@@ -225,9 +386,9 @@
   text-transform: uppercase;
   cursor: pointer;
   transition:
-    background var(--duration-fast) var(--ease-out-expo),
-    color var(--duration-fast) var(--ease-out-expo),
-    transform var(--duration-fast) var(--ease-out-expo);
+    background var(--duration-hover) var(--ease-out-expo),
+    color var(--duration-hover) var(--ease-out-expo),
+    transform var(--duration-hover) var(--ease-out-expo);
 }
 
 .btn:hover {
