@@ -14,6 +14,8 @@ import {
   setFeedbackLabel,
   markStageComplete,
   wait,
+  showContinueHint,
+  hideContinueHint,
 } from '../utils/feedback.js';
 
 /** Slider definitions — maps to visual / font axes */
@@ -92,8 +94,6 @@ export function initFontPlayground(section) {
   if (!sample || !inputs.length) return () => {};
 
   const reducedMotion = prefersReducedMotion();
-  const duration = reducedMotion ? 0.01 : ANIMATION.duration.hover;
-  const ease = ANIMATION.ease.out;
   const cleanups = [];
   let completed = false;
   let hoverTravel = 0;
@@ -111,13 +111,13 @@ export function initFontPlayground(section) {
 
   const state = {
     weight: SLIDERS.weight.default,
-    width: SLIDERS.width.default,
+    wdth: SLIDERS.width.default,
     spacing: SLIDERS.spacing.default,
     rotation: SLIDERS.rotation.default,
   };
 
   const proxy = { ...state };
-  const hoverBoost = { weight: 0, width: 0, scale: 1, x: 0, y: 0 };
+  const hoverBoost = { weight: 0, wdth: 0, scale: 1, x: 0, y: 0 };
   const gyro = { x: 0, y: 0, rot: 0 };
   const orientation = createOrientationReader();
   /** Max gyro contribution — keep barely perceptible */
@@ -126,17 +126,19 @@ export function initFontPlayground(section) {
 
   function applyVisuals() {
     const w = clamp(proxy.weight + hoverBoost.weight, SLIDERS.weight.min, SLIDERS.weight.max);
-    const wd = clamp(proxy.width + hoverBoost.width, SLIDERS.width.min, SLIDERS.width.max);
+    const wd = clamp(proxy.wdth + hoverBoost.wdth, SLIDERS.width.min, SLIDERS.width.max);
     const weight = Math.round(w);
-    const width = Math.round(wd);
-    // Drive Roboto Flex axes directly. Using font-weight alone snaps to a
-    // handful of named instances (looks like ~3 weights); `wght` stays continuous.
-    // Keep `opsz` + `wdth` in the same declaration so axes don't reset.
+    const wdth = Math.round(wd);
+    // Drive registered axes via high-level CSS (font-weight / font-stretch).
+    // Modern engines ignore `wght`/`wdth` inside font-variation-settings when
+    // an inherited font-weight/font-stretch is present — so FVS-only never wins.
     sample.style.fontFamily = "'Roboto Flex', sans-serif";
     sample.style.fontOpticalSizing = 'none';
-    sample.style.fontVariationSettings = `'wght' ${weight}, 'wdth' ${width}, 'opsz' 144`;
+    sample.style.fontSynthesis = 'none';
     sample.style.fontWeight = String(weight);
-    sample.style.fontStretch = `${width}%`;
+    sample.style.fontStretch = `${wdth}%`;
+    // Keep opsz here; also repeat wght/wdth for engines that still honor FVS.
+    sample.style.fontVariationSettings = `'wght' ${weight}, 'wdth' ${wdth}, 'opsz' 144`;
     sample.style.letterSpacing = `${proxy.spacing}em`;
     gsap.set(sample, {
       x: hoverBoost.x + gyro.x,
@@ -149,23 +151,35 @@ export function initFontPlayground(section) {
 
   applyVisuals();
 
-  // Re-apply once the variable font face is ready
+  // Re-apply once the variable width axis face is ready
   if (document.fonts?.load) {
     document.fonts
-      .load("500 64px 'Roboto Flex'")
+      .load("500 120% 64px 'Roboto Flex'")
       .then(() => applyVisuals())
-      .catch(() => {});
+      .catch(() => {
+        document.fonts
+          .load("500 64px 'Roboto Flex'")
+          .then(() => applyVisuals())
+          .catch(() => {});
+      });
   }
 
-  function animateTo(targets) {
-    Object.assign(state, targets);
-    gsap.to(proxy, {
-      ...targets,
-      duration,
-      ease,
-      overwrite: 'auto',
-      onUpdate: applyVisuals,
-    });
+  /** Map slider key → internal axis property (avoid GSAP `width` CSS conflict). */
+  function axisProp(key) {
+    return key === 'width' ? 'wdth' : key;
+  }
+
+  /**
+   * Apply slider values immediately (no GSAP tween — keeps drag in sync).
+   * @param {string} key
+   * @param {number} raw
+   */
+  function setFromSlider(key, raw) {
+    const prop = axisProp(key);
+    state[prop] = raw;
+    gsap.killTweensOf(proxy, prop);
+    proxy[prop] = raw;
+    applyVisuals();
   }
 
   const valueMap = {};
@@ -193,15 +207,30 @@ export function initFontPlayground(section) {
     const onInput = () => {
       const raw = Number(input.value);
       updateLabel(key, raw);
-      animateTo({ [key]: raw });
+      setFromSlider(key, raw);
       sliderTouches += 1;
       // Touch / coarse pointers: sliding counts as interaction
       if (isCoarse && sliderTouches >= 2) completeStage();
     };
 
     input.addEventListener('input', onInput);
-    cleanups.push(() => input.removeEventListener('input', onInput));
+    input.addEventListener('change', onInput);
+    cleanups.push(() => {
+      input.removeEventListener('input', onInput);
+      input.removeEventListener('change', onInput);
+    });
   });
+
+  // Keep slider drags from bubbling into preview gesture handlers.
+  if (sliders) {
+    const stopBubble = (e) => e.stopPropagation();
+    sliders.addEventListener('pointerdown', stopBubble);
+    sliders.addEventListener('pointermove', stopBubble);
+    cleanups.push(() => {
+      sliders.removeEventListener('pointerdown', stopBubble);
+      sliders.removeEventListener('pointermove', stopBubble);
+    });
+  }
 
   /**
    * Map pointer position relative to the sample into VF boosts.
@@ -228,7 +257,7 @@ export function initFontPlayground(section) {
     const follow = Boolean(opts.follow);
     gsap.to(hoverBoost, {
       weight: proximity * 100,
-      width: proximity * 36 * (dx >= 0 ? 1 : -1),
+      wdth: proximity * 36 * (dx >= 0 ? 1 : -1),
       scale: 1 + proximity * 0.12,
       x: follow ? clamp(dx, -1, 1) * 10 * proximity : 0,
       y: follow ? clamp(dy, -1, 1) * 8 * proximity : 0,
@@ -248,7 +277,7 @@ export function initFontPlayground(section) {
     lastY = 0;
     gsap.to(hoverBoost, {
       weight: 0,
-      width: 0,
+      wdth: 0,
       scale: 1,
       x: 0,
       y: 0,
@@ -307,9 +336,14 @@ export function initFontPlayground(section) {
     completed = true;
     markStageComplete('font-playground');
     if (cue) {
-      await setFeedbackLabel(cue, EXPERIENCE.feedback.great, { stage: false });
-      await wait(EXPERIENCE.feedbackHoldMs);
-      await setFeedbackLabel(cue, 'Variable Font', { stage: true });
+      await setFeedbackLabel(cue, EXPERIENCE.feedback.interactionComplete, {
+        stage: false,
+      });
+      await wait(1000);
+      await setFeedbackLabel(cue, EXPERIENCE.feedback.continueScrolling, {
+        stage: false,
+      });
+      showContinueHint(EXPERIENCE.feedback.continueScrolling);
     }
   }
 
@@ -369,18 +403,18 @@ export function initFontPlayground(section) {
           opacity: 1,
           y: 0,
           duration: ANIMATION.duration.slow,
-          ease: ANIMATION.ease.expo,
+          ease: ANIMATION.ease.smooth,
         });
       }
       if (preview) {
         gsap.fromTo(
           preview,
-          { opacity: 0, scale: 0.96 },
+          { opacity: 0, scale: 0.98 },
           {
             opacity: 1,
             scale: 1,
             duration: ANIMATION.duration.slow,
-            ease: ANIMATION.ease.expo,
+            ease: ANIMATION.ease.smooth,
             delay: 0.1,
           }
         );
@@ -390,7 +424,7 @@ export function initFontPlayground(section) {
           opacity: 1,
           y: 0,
           duration: ANIMATION.duration.slow,
-          ease: ANIMATION.ease.expo,
+          ease: ANIMATION.ease.smooth,
           delay: 0.18,
         });
       }
@@ -409,8 +443,9 @@ export function initFontPlayground(section) {
     lastY = 0;
     dragging = false;
     Object.keys(SLIDERS).forEach((key) => {
-      state[key] = SLIDERS[key].default;
-      proxy[key] = SLIDERS[key].default;
+      const prop = key === 'width' ? 'wdth' : key;
+      state[prop] = SLIDERS[key].default;
+      proxy[prop] = SLIDERS[key].default;
       updateLabel(key, SLIDERS[key].default);
     });
     inputs.forEach((input) => {
@@ -419,7 +454,7 @@ export function initFontPlayground(section) {
       if (def) input.value = String(def.default);
     });
     hoverBoost.weight = 0;
-    hoverBoost.width = 0;
+    hoverBoost.wdth = 0;
     hoverBoost.scale = 1;
     hoverBoost.x = 0;
     hoverBoost.y = 0;
@@ -429,6 +464,7 @@ export function initFontPlayground(section) {
     gsap.killTweensOf(proxy);
     gsap.killTweensOf(hoverBoost);
     applyVisuals();
+    hideContinueHint();
     if (cue) {
       cue.textContent = 'Variable Font';
       cue.classList.add('is-stage');

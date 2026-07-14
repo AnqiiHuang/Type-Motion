@@ -4,7 +4,7 @@
    ========================================================================== */
 
 .section--playground {
-  background-color: var(--color-bg);
+  background-color: var(--section-playground-bg);
   z-index: 8;
   align-items: stretch;
   max-height: var(--section-min-height-svh);
@@ -83,13 +83,14 @@
   font-size: clamp(4.5rem, 14vw, 9.5rem);
   font-weight: 400;
   font-stretch: 100%;
+  font-synthesis: none;
   line-height: 0.92;
   letter-spacing: 0;
   color: var(--color-text);
   text-align: center;
   user-select: none;
   transform-origin: center center;
-  will-change: transform, font-variation-settings, letter-spacing;
+  will-change: transform, font-weight, font-stretch, letter-spacing;
   font-optical-sizing: none;
   font-variation-settings: 'wght' 400, 'wdth' 100, 'opsz' 144;
 }
@@ -104,6 +105,9 @@
   margin: 0;
   opacity: 0;
   flex: 0 0 auto;
+  position: relative;
+  z-index: 3;
+  pointer-events: auto;
 }
 
 .playground__slider {
@@ -147,7 +151,7 @@
   border-radius: 1px;
   outline: none;
   cursor: pointer;
-  touch-action: none;
+  touch-action: manipulation;
 }
 
 .playground__range::-webkit-slider-thumb {

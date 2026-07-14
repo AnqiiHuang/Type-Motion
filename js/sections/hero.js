@@ -1,8 +1,8 @@
 /**
  * Section 1 — Landing Hero
  *
- * TYPE entrance → subtitle + scroll cue →
- * scrubbed scale / fade exit (no abrupt cut)
+ * TYPE entrance → concept line + scroll cue →
+ * soft idle breath → scrubbed scale / fade exit
  */
 
 import { ANIMATION } from '../config.js';
@@ -43,6 +43,7 @@ function buildLetters(container, word) {
  */
 export function initHero(section) {
   const word = section.querySelector('[data-hero-word]');
+  const title = section.querySelector('.hero__title');
   const concept = section.querySelector('[data-hero-concept]');
   const subtitle = section.querySelector('[data-hero-subtitle]');
   const bg = section.querySelector('.hero__bg');
@@ -64,14 +65,42 @@ export function initHero(section) {
   let scrollTl = null;
   /** @type {ScrollTrigger | null} */
   let hintTrigger = null;
+  /** @type {gsap.core.Tween | null} */
+  let idleBreath = null;
 
   if (concept) {
     concept.textContent = SESSION.openingLine;
+  }
+  if (subtitle) {
+    subtitle.textContent = 'Typography is not static.';
   }
   if (hintText) hintText.textContent = 'Scroll to Start';
 
   headerLabel?.classList.add('is-visible');
   headerActions?.classList.add('is-visible');
+
+  function stopIdle() {
+    idleBreath?.kill();
+    idleBreath = null;
+    if (title) gsap.set(title, { scale: 1 });
+  }
+
+  function startIdle() {
+    if (reducedMotion || !title) return;
+    stopIdle();
+    idleBreath = gsap.fromTo(
+      title,
+      { scale: 0.99 },
+      {
+        scale: 1.01,
+        duration: 3.2 * (1 / SESSION.tempo),
+        ease: ANIMATION.ease.smooth,
+        yoyo: true,
+        repeat: -1,
+        transformOrigin: '50% 50%',
+      }
+    );
+  }
 
   function killEntrance() {
     entranceTl?.kill();
@@ -80,12 +109,14 @@ export function initHero(section) {
 
   function playEntrance({ fromLoader = false } = {}) {
     killEntrance();
+    stopIdle();
 
     letters = buildLetters(word, 'TYPE');
     gsap.set(letters, { opacity: 0, scale: 1.08, y: 12 });
     if (concept) gsap.set(concept, { opacity: 0, y: 6 });
     if (subtitle) gsap.set(subtitle, { opacity: 0, y: 10 });
     gsap.set(word, { clearProps: 'x,y,scale,opacity' });
+    if (title) gsap.set(title, { scale: 1 });
 
     const hold = reducedMotion ? 0.15 : Math.max(0.7, ANIMATION.duration.opening * 0.85);
     entranceTl = gsap.timeline({ delay: fromLoader ? 0.05 : 0.12 });
@@ -96,7 +127,7 @@ export function initHero(section) {
           opacity: 1,
           y: 0,
           duration: ANIMATION.duration.slow,
-          ease: ANIMATION.ease.out,
+          ease: ANIMATION.ease.smooth,
         })
         .to(concept, {
           opacity: 0,
@@ -117,7 +148,7 @@ export function initHero(section) {
         scale: 1,
         y: 0,
         duration: ANIMATION.duration.slow,
-        ease: ANIMATION.ease.expo,
+        ease: ANIMATION.ease.smooth,
         stagger: 0.045,
       },
       concept && !fromLoader ? '-=0.12' : 0
@@ -130,7 +161,7 @@ export function initHero(section) {
           opacity: 1,
           y: 0,
           duration: ANIMATION.duration.normal,
-          ease: ANIMATION.ease.out,
+          ease: ANIMATION.ease.smooth,
         },
         '-=0.35'
       );
@@ -141,6 +172,7 @@ export function initHero(section) {
         if (hintText) hintText.textContent = 'Scroll to Start';
         scrollHint?.classList.add('is-visible');
         gsap.set(scrollHint, { opacity: 1, clearProps: 'opacity' });
+        startIdle();
       },
       null,
       '-=0.15'
@@ -183,12 +215,18 @@ export function initHero(section) {
       pin: true,
       scrub: ANIMATION.duration.scroll,
       anticipatePin: 1,
+      onUpdate: (self) => {
+        if (self.progress > 0.02) stopIdle();
+        else if (!idleBreath && self.progress < 0.01) startIdle();
+      },
       onLeave: () => {
+        stopIdle();
         scrollHint?.classList.remove('is-visible');
       },
       onEnterBack: () => {
         if (hintText) hintText.textContent = 'Scroll to Start';
         scrollHint?.classList.add('is-visible');
+        startIdle();
       },
     },
   });
@@ -251,14 +289,17 @@ export function initHero(section) {
   });
 
   replayHeroFn = () => {
+    stopIdle();
     gsap.set(word, { clearProps: 'opacity,scale,x,y,transform' });
     if (subtitle) gsap.set(subtitle, { clearProps: 'opacity,y,transform' });
+    if (title) gsap.set(title, { clearProps: 'scale,transform' });
     if (bg) gsap.set(bg, { opacity: 0 });
     playEntrance({ fromLoader: true });
   };
 
   cleanups.push(() => {
     killEntrance();
+    stopIdle();
     scrollTl?.scrollTrigger?.kill();
     scrollTl?.kill();
     hintTrigger?.kill();

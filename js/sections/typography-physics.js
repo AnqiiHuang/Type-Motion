@@ -53,6 +53,7 @@ export function initTypographyPhysics(section) {
   const stage = section.querySelector('[data-physics-stage]');
   const wordEl = section.querySelector('[data-physics-word]');
   const button = section.querySelector('[data-physics-toggle]');
+  const lead = section.querySelector('[data-physics-lead]');
   const label = section.querySelector('.physics__label');
   const actions = section.querySelector('.physics__actions');
 
@@ -331,6 +332,7 @@ export function initTypographyPhysics(section) {
   });
 
   gsap.set(letters, { opacity: 0, y: 24 });
+  if (lead) gsap.set(lead, { opacity: 0, y: 10 });
   if (label) gsap.set(label, { opacity: 0, y: 8 });
   if (actions) gsap.set(actions, { opacity: 0, y: 12 });
 
@@ -339,30 +341,39 @@ export function initTypographyPhysics(section) {
     start: 'top 70%',
     once: true,
     onEnter: () => {
-      gsap.to(letters, {
-        opacity: 1,
-        y: 0,
-        duration: ANIMATION.duration.slow,
-        ease: ANIMATION.ease.expo,
-        stagger: 0.05,
-        onComplete: () => gsap.set(letters, { clearProps: 'transform' }),
-      });
+      if (lead) {
+        gsap.to(lead, {
+          opacity: 1,
+          y: 0,
+          duration: ANIMATION.duration.slow,
+          ease: ANIMATION.ease.smooth,
+        });
+      }
       if (label) {
         gsap.to(label, {
           opacity: 1,
           y: 0,
           duration: ANIMATION.duration.normal,
-          ease: ANIMATION.ease.out,
-          delay: 0.15,
+          ease: ANIMATION.ease.smooth,
+          delay: 0.18,
         });
       }
+      gsap.to(letters, {
+        opacity: 1,
+        y: 0,
+        duration: ANIMATION.duration.slow,
+        ease: ANIMATION.ease.smooth,
+        stagger: 0.05,
+        delay: 0.22,
+        onComplete: () => gsap.set(letters, { clearProps: 'transform' }),
+      });
       if (actions) {
         gsap.to(actions, {
           opacity: 1,
           y: 0,
           duration: ANIMATION.duration.normal,
-          ease: ANIMATION.ease.out,
-          delay: 0.3,
+          ease: ANIMATION.ease.smooth,
+          delay: 0.42,
         });
       }
     },

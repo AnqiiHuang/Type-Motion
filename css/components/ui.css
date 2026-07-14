@@ -262,6 +262,10 @@ body.is-loading {
   opacity: 1;
 }
 
+.scroll-hint.is-visible .scroll-hint__text {
+  animation: scrollHintPulse 2.8s var(--ease-in-out) infinite;
+}
+
 .scroll-hint__text {
   font-size: 0.6875rem;
   font-weight: 500;
@@ -455,6 +459,11 @@ html[data-cursor='text'] body {
   50% { transform: translateY(6px); }
 }
 
+@keyframes scrollHintPulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
 @keyframes scrollWheelPulse {
   0%, 100% { opacity: 0.45; transform: translateY(0); }
   50% { opacity: 1; transform: translateY(3px); }
@@ -463,7 +472,8 @@ html[data-cursor='text'] body {
 @media (prefers-reduced-motion: reduce) {
   .scroll-hint__mouse,
   .scroll-hint__mouse-wheel,
-  .scroll-hint__line {
+  .scroll-hint__line,
+  .scroll-hint.is-visible .scroll-hint__text {
     animation: none;
   }
 

@@ -30,6 +30,16 @@
   --hero-grad-3: #ebebeb;
   --hero-grad-4: #e0e0e0;
   --trail-rgb: 10, 10, 10;
+
+  /* Distinct panel surfaces (free-scroll, no snap) */
+  --section-hero-bg: #ffffff;
+  --section-mouse-bg: #f0f0f0;
+  --section-playground-bg: #e4e4e4;
+  --section-wave-bg: #fafafa;
+  --section-physics-bg: #e8e8e8;
+  --section-poster-bg: #f3f3f3;
+  --section-theme-bg: #dcdcdc;
+  --section-about-bg: #eeeeee;
 }
 
 /* Brutalism — raw, heavy, confrontational */
@@ -59,6 +69,15 @@
   --hero-grad-3: #ddd7c8;
   --hero-grad-4: #000000;
   --trail-rgb: 0, 0, 0;
+
+  --section-hero-bg: #f2f0e9;
+  --section-mouse-bg: #e4dfd0;
+  --section-playground-bg: #d8d1bc;
+  --section-wave-bg: #ebe6d8;
+  --section-physics-bg: #cdc5ae;
+  --section-poster-bg: #e0dbc8;
+  --section-theme-bg: #c4baa0;
+  --section-about-bg: #ddd6c2;
 }
 
 /* Cyber — dark, precise, signal green */
@@ -88,6 +107,15 @@
   --hero-grad-3: #102018;
   --hero-grad-4: #163024;
   --trail-rgb: 88, 255, 140;
+
+  --section-hero-bg: #050705;
+  --section-mouse-bg: #0a110c;
+  --section-playground-bg: #0f1a12;
+  --section-wave-bg: #08100b;
+  --section-physics-bg: #121f16;
+  --section-poster-bg: #0c1610;
+  --section-theme-bg: #15241a;
+  --section-about-bg: #0e1812;
 }
 
 /* Luxury — deep charcoal, quiet gold */
@@ -117,6 +145,15 @@
   --hero-grad-3: #221e1a;
   --hero-grad-4: #2a241e;
   --trail-rgb: 212, 175, 55;
+
+  --section-hero-bg: #141210;
+  --section-mouse-bg: #1a1714;
+  --section-playground-bg: #211c18;
+  --section-wave-bg: #171411;
+  --section-physics-bg: #261f1a;
+  --section-poster-bg: #1c1814;
+  --section-theme-bg: #2c241e;
+  --section-about-bg: #1e1a16;
 }
 
 /* Editorial — clean print, serif hierarchy */
@@ -146,6 +183,15 @@
   --hero-grad-3: #eae8e1;
   --hero-grad-4: #dfddd4;
   --trail-rgb: 18, 18, 18;
+
+  --section-hero-bg: #fafaf8;
+  --section-mouse-bg: #f0efe8;
+  --section-playground-bg: #e4e2d8;
+  --section-wave-bg: #f5f4ef;
+  --section-physics-bg: #dcd9cc;
+  --section-poster-bg: #ebe9e0;
+  --section-theme-bg: #d2cec0;
+  --section-about-bg: #e8e6dc;
 }
 
 /* Smooth global theme transitions */

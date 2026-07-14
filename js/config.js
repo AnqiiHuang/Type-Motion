@@ -123,6 +123,8 @@ export const EXPERIENCE = {
     completed: 'Completed',
     unlocked: 'Unlocked',
     stageComplete: 'Stage Complete',
+    interactionComplete: '✓ Interaction Complete',
+    continueScrolling: 'Continue Scrolling ↓',
   },
 };
 

@@ -944,6 +944,7 @@ export function initPosterGenerator(section) {
   let currentSpec = null;
   let completed = false;
   let redrawTimer = null;
+  let generating = false;
 
   const posterHint = isCoarsePointer()
     ? 'Touch the poster to edit · Type to set the title'
@@ -1128,7 +1129,43 @@ export function initPosterGenerator(section) {
     setEditing(false);
   };
 
-  const onGenerate = () => renderNewPoster({ animate: true });
+  const onGenerate = async () => {
+    if (generating) return;
+    generating = true;
+    const prevLabel = generateBtn.textContent;
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Generating...';
+    frame?.classList.add('is-generating');
+
+    if (!reducedMotion && frame) {
+      gsap.to(frame, {
+        opacity: 0.35,
+        duration: ANIMATION.duration.hover,
+        ease: ANIMATION.ease.smooth,
+      });
+    }
+
+    await wait(reducedMotion ? 120 : 800);
+
+    renderNewPoster({ animate: !reducedMotion });
+
+    if (!reducedMotion && frame) {
+      gsap.fromTo(
+        frame,
+        { opacity: 0.35 },
+        {
+          opacity: 1,
+          duration: ANIMATION.duration.normal,
+          ease: ANIMATION.ease.smooth,
+        }
+      );
+    }
+
+    frame?.classList.remove('is-generating');
+    generateBtn.textContent = prevLabel || 'Generate Poster';
+    generateBtn.disabled = false;
+    generating = false;
+  };
   const onThemeChange = () => {
     if (!currentSpec) return;
     const nextPalette = pick(getThemePalettes());
@@ -1178,7 +1215,7 @@ export function initPosterGenerator(section) {
           opacity: 1,
           y: 0,
           duration: ANIMATION.duration.normal,
-          ease: ANIMATION.ease.out,
+          ease: ANIMATION.ease.smooth,
         });
       }
       if (frame) {
@@ -1186,7 +1223,7 @@ export function initPosterGenerator(section) {
           opacity: 1,
           y: 0,
           duration: ANIMATION.duration.slow,
-          ease: ANIMATION.ease.expo,
+          ease: ANIMATION.ease.smooth,
           delay: 0.1,
         });
       }
@@ -1195,7 +1232,7 @@ export function initPosterGenerator(section) {
           opacity: 1,
           y: 0,
           duration: ANIMATION.duration.normal,
-          ease: ANIMATION.ease.out,
+          ease: ANIMATION.ease.smooth,
           delay: 0.25,
         });
       }

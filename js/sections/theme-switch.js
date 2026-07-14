@@ -51,7 +51,7 @@ export function initThemeSwitch(section) {
           opacity: 1,
           y: 0,
           duration: ANIMATION.duration.hover,
-          ease: ANIMATION.ease.out,
+          ease: ANIMATION.ease.smooth,
         }
       );
       hint.textContent = theme.description;
@@ -64,7 +64,7 @@ export function initThemeSwitch(section) {
           opacity: 1,
           y: 0,
           duration: ANIMATION.duration.click,
-          ease: ANIMATION.ease.expo,
+          ease: ANIMATION.ease.smooth,
         }
       );
       current.textContent = theme?.label ?? id;
@@ -104,7 +104,7 @@ export function initThemeSwitch(section) {
           opacity: 1,
           y: 0,
           duration: ANIMATION.duration.slow,
-          ease: ANIMATION.ease.expo,
+          ease: ANIMATION.ease.smooth,
         });
       }
       if (grid) {
@@ -112,7 +112,7 @@ export function initThemeSwitch(section) {
           opacity: 1,
           y: 0,
           duration: ANIMATION.duration.slow,
-          ease: ANIMATION.ease.expo,
+          ease: ANIMATION.ease.smooth,
           delay: 0.12,
         });
       }

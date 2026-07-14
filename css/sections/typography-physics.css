@@ -3,7 +3,7 @@
    ========================================================================== */
 
 .section--physics {
-  background-color: var(--color-bg);
+  background-color: var(--section-physics-bg);
   z-index: 6;
 }
 
@@ -21,6 +21,19 @@
   padding: calc(var(--header-height) + var(--space-sm)) var(--space-md) calc(var(--space-md) + var(--scroll-cue-space));
   gap: var(--space-md);
   box-sizing: border-box;
+}
+
+.physics__lead {
+  margin: 0;
+  max-width: 28rem;
+  padding: 0 var(--space-sm);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+  text-align: center;
+  color: var(--color-text-muted);
+  opacity: 0;
 }
 
 .physics__label {
@@ -85,6 +98,11 @@
     padding-bottom: calc(var(--space-sm) + var(--scroll-cue-space));
     gap: var(--space-sm);
     box-sizing: border-box;
+  }
+
+  .physics__lead {
+    font-size: 0.75rem;
+    max-width: 22rem;
   }
 
   .physics__stage {

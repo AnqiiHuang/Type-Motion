@@ -3,7 +3,7 @@
    ========================================================================== */
 
 .section--poster {
-  background-color: var(--color-bg);
+  background-color: var(--section-poster-bg);
   z-index: 5;
   align-items: stretch;
 }
@@ -59,6 +59,18 @@
 .poster__frame.is-editing {
   outline: 1px solid color-mix(in srgb, var(--color-text) 28%, transparent);
   outline-offset: 4px;
+}
+
+.poster__frame.is-generating {
+  pointer-events: none;
+}
+
+.poster__frame.is-generating::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-bg) 28%, transparent);
+  pointer-events: none;
 }
 
 .poster__actions {

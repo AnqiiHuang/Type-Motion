@@ -1,7 +1,7 @@
 /**
  * Section 8 — About / Ending
  *
- * Closing statement → credit. Soft restart lives in the header.
+ * Closing summary → credit → soft restart (header + footer CTA).
  */
 
 import { ANIMATION } from '../config.js';
@@ -26,7 +26,7 @@ export function initAbout(section) {
 
   const prep = [eyebrow, title, tagline, rule, body, footer].filter(Boolean);
 
-  gsap.set(prep, { opacity: 0, y: 24 });
+  gsap.set(prep, { opacity: 0, y: 20 });
 
   const entrance = ScrollTrigger.create({
     trigger: section,
@@ -36,13 +36,15 @@ export function initAbout(section) {
       hideContinueHint();
 
       const tl = gsap.timeline({
-        defaults: { ease: ANIMATION.ease.expo },
+        defaults: {
+          ease: ANIMATION.ease.smooth,
+          duration: ANIMATION.duration.normal,
+        },
       });
 
       tl.to(eyebrow, {
         opacity: 1,
         y: 0,
-        duration: ANIMATION.duration.normal,
       })
         .to(
           title,
@@ -51,25 +53,23 @@ export function initAbout(section) {
             y: 0,
             duration: ANIMATION.duration.slow,
           },
-          '-=0.2'
+          '-=0.18'
         )
         .to(
           tagline,
           {
             opacity: 1,
             y: 0,
-            duration: ANIMATION.duration.normal,
           },
-          '-=0.35'
+          '-=0.28'
         )
         .to(
           rule,
           {
             opacity: 1,
             y: 0,
-            duration: ANIMATION.duration.normal,
           },
-          '-=0.4'
+          '-=0.32'
         )
         .to(
           body,
@@ -78,16 +78,15 @@ export function initAbout(section) {
             y: 0,
             duration: ANIMATION.duration.slow,
           },
-          '-=0.35'
+          '-=0.28'
         )
         .to(
           footer,
           {
             opacity: 1,
             y: 0,
-            duration: ANIMATION.duration.normal,
           },
-          '-=0.4'
+          '-=0.32'
         );
     },
   });

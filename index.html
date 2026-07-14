@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Type Motion — An interactive typography laboratory">
+  <meta name="description" content="Type Motion — An interactive typography experience exploring motion, interaction, and digital letterforms">
   <title>Type Motion</title>
   <script>
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
@@ -13,7 +13,9 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:opsz,wght@14..32,100..900&family=Newsreader:opsz,wght@6..72,400;500;600&family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..1000&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Roboto Flex: local @font-face (see css/roboto-flex.css) — Google CSS UA-sniffing breaks wdth in Chrome -->
+  <link rel="stylesheet" href="css/roboto-flex.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:opsz,wght@14..32,100..900&family=Newsreader:opsz,wght@6..72,400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Styles -->
   <link rel="stylesheet" href="css/base.css">
@@ -91,7 +93,7 @@
         <h1 class="hero__title" aria-label="Type">
           <span class="hero__word" data-hero-word>TYPE</span>
         </h1>
-        <p class="hero__subtitle" data-hero-subtitle>Interactive Typography Experience</p>
+        <p class="hero__subtitle" data-hero-subtitle>Typography is not static.</p>
       </div>
     </section>
 
@@ -209,6 +211,9 @@
       aria-label="Typography Physics"
     >
       <div class="physics__content">
+        <p class="physics__lead" data-physics-lead>
+          Typography can also respond to physical forces.
+        </p>
         <p class="physics__label">Drop to collide</p>
 
         <div class="physics__stage" data-physics-stage>
@@ -330,14 +335,19 @@
         <p class="about__tagline" data-about-tagline>Keep Exploring Typography</p>
         <span class="about__rule" aria-hidden="true"></span>
         <div class="about__body">
-          <p>Type Motion explores typography through interaction.</p>
-          <p>Every gesture transforms a letter into a new visual experience.</p>
-          <p>Rather than simply reading typography, users discover it through movement, curiosity and play.</p>
+          <p>
+            Type Motion is an interactive typography experiment exploring how
+            motion, interaction and digital media transform static letterforms
+            into dynamic experiences.
+          </p>
         </div>
         <footer class="about__footer">
-          <p class="about__credit">Designed &amp; Developed by</p>
+          <p class="about__credit">Designed &amp; Developed</p>
           <p class="about__author">Anqi Huang</p>
           <p class="about__year">2026</p>
+          <button type="button" class="about__restart" data-restart>
+            Restart Experience
+          </button>
         </footer>
       </div>
     </section>

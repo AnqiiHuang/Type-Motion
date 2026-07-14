@@ -12,7 +12,6 @@ import { initPointer } from './utils/pointer.js';
 import { initTrail } from './utils/trail.js';
 import { initCursorSystem } from './utils/cursor.js';
 import { initProgressIndicator } from './utils/progress.js';
-import { initSectionSnap } from './utils/snap.js';
 import { runLoader } from './utils/loader.js';
 import { initRestart } from './utils/restart.js';
 import { initHero } from './sections/hero.js';
@@ -28,7 +27,7 @@ import { initAbout } from './sections/about.js';
 const SECTIONS = [
   { selector: '#hero', init: initHero, eager: true },
   { selector: '#mouse-interaction', init: initMouseInteraction, eager: true },
-  { selector: '#font-playground', init: initFontPlayground },
+  { selector: '#font-playground', init: initFontPlayground, eager: true },
   { selector: '#wave-typography', init: initWaveTypography },
   { selector: '#typography-physics', init: initTypographyPhysics },
   { selector: '#poster-generator', init: initPosterGenerator },
@@ -68,7 +67,6 @@ async function init() {
   });
 
   cleanups.push(initProgressIndicator());
-  cleanups.push(initSectionSnap());
   cleanups.push(initRestart());
 
   // Signal Hero (and any listeners) that the experience may begin

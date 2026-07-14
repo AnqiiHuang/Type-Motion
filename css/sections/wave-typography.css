@@ -3,7 +3,7 @@
    ========================================================================== */
 
 .section--wave {
-  background-color: var(--color-bg);
+  background-color: var(--section-wave-bg);
   z-index: 7;
   cursor: grab;
 }

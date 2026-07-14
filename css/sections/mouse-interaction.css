@@ -3,7 +3,7 @@
    ========================================================================== */
 
 .section--mouse {
-  background-color: var(--color-bg);
+  background-color: var(--section-mouse-bg);
   z-index: 9;
   --journey-progress: 0;
   --climax-flash: 0;
